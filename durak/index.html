@@ -4,7 +4,6 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Durak — aqri.dev</title>
-<meta name="description" content="Cozy P2P Durak (24/36 cards). Drag to play. Throw-ins always ON. No servers."/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;600;800&family=Russo+One&display=swap" rel="stylesheet">
@@ -219,12 +218,14 @@ $$('.tab').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.nav;if(v
 
 /* ===== Global state ===== */
 const TURN_LIMIT_SEC=60;
+let CARD_ID=0;
 const state={
   name:localStorage.getItem('durakName')||'',
   connected:false,isHost:false,uid:null,peerName:'—',
   pc:null,dc:null,
   room:null,
-  settings:{deckSize:36}
+  settings:{deckSize:36},
+  dragActive:false // <-- de-dupe one drop per drag
 };
 $('#playerName').value=state.name; $('#nameChip').textContent=state.name||'(not set)';
 $('#btnSaveName').onclick=()=>{const v=$('#playerName').value.trim(); if(!v){toast('Enter a name');return;} state.name=v; localStorage.setItem('durakName',v); $('#nameChip').textContent=v; toast('Saved');};
@@ -280,27 +281,29 @@ function onMsg(m){
 const SUITS=()=>['♠','♥','♦','♣'];
 const ranks = ()=> state.room?.ranks || (state.settings.deckSize===24? ['9','10','J','Q','K','A'] : ['6','7','8','9','10','J','Q','K','A']);
 const rIdx = r => ranks().indexOf(r);
-let CARD_ID=0;
 const freshDeck=()=>{const d=[]; for(const s of SUITS()) for(const r of ranks()) d.push({id:CARD_ID++, s, r}); for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]];} return d;};
 const canBeat=(a,d,tr)=> (a && d) && (a.s===d.s? rIdx(d.r)>rIdx(a.r) : d.s===tr && a.s!==tr);
 const sortHand=(a,b)=>{const t=state.room?.trump,so={'♠':0,'♥':1,'♦':2,'♣':3}; const sa=(a.s===t?4:so[a.s]), sb=(b.s===t?4:so[b.s]); return sa!==sb? sa-sb : rIdx(a.r)-rIdx(b.r);};
 
 function ranksOnTable(r){ const set=new Set(); (r.table||[]).forEach(p=>{ if(p.attack) set.add(p.attack.r); if(p.defend) set.add(p.defend.r);}); (r.attacks||[]).forEach(a=>set.add(a.r)); return set; }
-function totalAttacks(r){ return (r.table?.length||0)+(r.attacks?.length||0); } // count of attack cards
+function totalAttacks(r){ return (r.table?.length||0)+(r.attacks?.length||0); }
 function startBout(r){ r.boutLimit = Math.min(6, r.hands[r.defenderUid].length); }
 function canAddAttack(r,card){
   const t=totalAttacks(r);
-  if(t >= r.boutLimit) return false;              // fixed per bout
-  if(t === 0) return true;                        // first attack any rank
-  return ranksOnTable(r).has(card.r);             // add only ranks on table
+  if(t >= r.boutLimit) return false;
+  if(t === 0) return true;
+  return ranksOnTable(r).has(card.r);
 }
 
-/* guards for card ownership (prevents double-use) */
+/* ownership & double-use guards */
 function findCardIndex(r, uid, cid){ return r.hands[uid].findIndex(c=>c.id===cid); }
 function removeCardFromHand(r, uid, cid){
   const i=findCardIndex(r,uid,cid);
   if(i<0) return null;
   return r.hands[uid].splice(i,1)[0];
+}
+function cardOnBoard(r, cid){
+  return r.attacks.some(a=>a.id===cid) || r.table.some(p=>p.attack?.id===cid || p.defend?.id===cid);
 }
 
 /* Phases & enforcement */
@@ -345,11 +348,9 @@ function opAttack(uid,card){
   const attackerActing = (uid===r.attackerUid) && (r.phase==='attack' || r.phase==='defend' || r.phase==='add');
   if(!attackerActing) return;
 
-  // must own exact card id
   const mine = removeCardFromHand(r, uid, card.id);
   if(!mine) return;
-
-  if(!canAddAttack(r,mine)) { // return card if illegal
+  if(cardOnBoard(r, mine.id) || !canAddAttack(r,mine)){
     r.hands[uid].push(mine); r.hands[uid].sort(sortHand); return;
   }
   r.attacks.push(mine);
@@ -360,15 +361,14 @@ function defendAtIndex(uid, card, i){
   const r=state.room; if(!r || uid!==r.defenderUid) return;
   if(r.attacks.length===0) return;
 
-  // must own exact card id
   const mine = removeCardFromHand(r, uid, card.id);
   if(!mine) return;
 
-  // pick target index
+  if(cardOnBoard(r, mine.id)){ r.hands[uid].push(mine); r.hands[uid].sort(sortHand); return; }
+
   if(i==null){ i = r.attacks.findIndex(a=>canBeat(a,mine,r.trump)); }
   const a=r.attacks[i];
   if(i<0 || !a || !canBeat(a,mine,r.trump)){
-    // put back if cannot defend
     r.hands[uid].push(mine); r.hands[uid].sort(sortHand); return;
   }
   r.table.push({attack:a,defend:mine});
@@ -381,44 +381,35 @@ function endBoutToDiscard(){
   const r=state.room;
   const pile=r.table.flatMap(p=>[p.attack,p.defend]).filter(Boolean);
   r.discardCount+=pile.length; r.table=[]; r.attacks=[];
-  // refill: attacker first, then defender
   for(const uid of [r.attackerUid,r.defenderUid]){
     while(r.hands[uid].length<6 && r.deck.length>0){ r.hands[uid].push(r.deck.pop()); r.stockCount=r.deck.length; }
   }
-  // swap roles and start next bout
   [r.attackerUid,r.defenderUid]=[r.defenderUid,r.attackerUid];
   startBout(r); setPhase(r,'attack'); checkGameEnd(r);
 }
-
 function opEnd(uid){
   const r=state.room; if(!r || uid!==r.attackerUid) return;
   if(!boutCovered(r)) return;
   endBoutToDiscard(); resetDeadline(); broadcast();
 }
-
 function opTake(uid){
   const r=state.room; if(!r || uid!==r.defenderUid) return;
   if(r.attacks.length===0 && r.table.length===0) return;
   const pile=r.attacks.concat(r.table.flatMap(p=>[p.attack,p.defend])).filter(Boolean);
   r.hands[r.defenderUid]=r.hands[r.defenderUid].concat(pile);
   r.attacks=[]; r.table=[];
-  // refill: attacker first, then defender
   for(const u of [r.attackerUid,r.defenderUid]){
     while(r.hands[u].length<6 && r.deck.length>0){ r.hands[u].push(r.deck.pop()); r.stockCount=r.deck.length; }
   }
-  // attacker keeps turn; new bout & limit
   startBout(r); setPhase(r,'attack'); checkGameEnd(r);
   resetDeadline(); broadcast();
 }
-
 function opSurrender(uid){
   const r=state.room; if(!r||r.status!=='playing') return;
   r.status='finished'; r.loserUid=uid; r.winnerUid= uid==='A'?'B':'A'; setPhase(r,'done');
-  log(`${r.names[uid]} surrendered`);
-  broadcast();
+  log(`${r.names[uid]} surrendered`); broadcast();
 }
 function opTimeout(uid){ opSurrender(uid); }
-
 function checkGameEnd(r){
   const empty=r.deck.length===0, a=r.hands[r.attackerUid].length, d=r.hands[r.defenderUid].length;
   if(empty && (a===0 || d===0)){
@@ -442,19 +433,25 @@ function handleMoveFromGuest(m){ const uid='B';
 setInterval(()=>{ const r=state.room; if(state.isHost && r && r.status==='playing' && Date.now()>r.turnDeadline){ opTimeout(r.turnUid); } }, 1000);
 
 /* ===== Drag & Drop ===== */
+function beginDrag(){ state.dragActive=true; }
+function consumeDrag(){ if(!state.dragActive) return false; state.dragActive=false; return true; }
+
 function dragStart(ev,c){
+  beginDrag();
   try{ ev.dataTransfer.setData('application/json', JSON.stringify(c)); }catch{}
   try{ ev.dataTransfer.setData('text/plain', JSON.stringify(c)); }catch{}
   ev.dataTransfer.effectAllowed='move';
   ev.currentTarget.classList.add('dragging');
 }
-function dragEnd(ev){ ev.currentTarget.classList.remove('dragging'); }
+function dragEnd(ev){ state.dragActive=false; ev.currentTarget.classList.remove('dragging'); }
 
 const drop=$('#tableDrop');
 drop.addEventListener('dragover',ev=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; });
 drop.addEventListener('drop',ev=>{
   ev.preventDefault();
-  // If dropped on a specific attack target, ignore container (prevents double handling)
+  // if already handled by an attack target, ignore
+  if(!consumeDrag()) return;
+  // ignore if we actually dropped onto a target
   if(ev.target.closest('.attack-target')) return;
 
   const json = ev.dataTransfer.getData('application/json') || ev.dataTransfer.getData('text/plain');
@@ -517,13 +514,13 @@ function render(){
     const el=makeCardEl(a,'attack');
     el.classList.add('attack-target');
     el.dataset.idx=i;
-    // Defender can drop exactly on this card to cover that index (stop bubbling!)
     el.addEventListener('dragover',ev=>{
       if(state.uid===r.defenderUid){ ev.preventDefault(); ev.stopPropagation(); ev.dataTransfer.dropEffect='move'; }
     });
     el.addEventListener('drop',ev=>{
       if(state.uid!==r.defenderUid) return;
       ev.preventDefault(); ev.stopPropagation();
+      if(!consumeDrag()) return; // <-- de-dupe here too
       const json = ev.dataTransfer.getData('application/json') || ev.dataTransfer.getData('text/plain');
       if(!json) return;
       const c=JSON.parse(json);
@@ -549,13 +546,6 @@ $('#deckSize').onchange=updateLobby; updateLobby();
 nav('home');
 setInterval(()=>{ const r=state.room; if(!r) return; if(views.room.classList.contains('active')) render(); }, 300);
 </script>
-
-<!-- Notes:
-  • Fix: A single defence card could apply to multiple attacks due to event bubbling; now each drop is handled exactly once and the host verifies card ownership by unique ID.
-  • Throw-ins ALWAYS ON. Bout limit = min(6, defender hand at bout start). Up to 6 attacks + 6 defences.
-  • Hearts/♦ and Diamonds/♥ render red like real decks.
-  • Defend a specific pending attack by dropping onto it; dropping on felt auto-defends the first beatable.
--->
 </body>
 </html>
 
