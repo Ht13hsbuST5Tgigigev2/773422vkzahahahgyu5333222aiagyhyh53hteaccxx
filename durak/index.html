@@ -9,20 +9,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;600;800&family=Russo+One&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#160d06; --wood1:#3a2414; --wood2:#5a3620; --wood3:#7a4a2a; --ink:#f7efe6; --smoke:#e8dccf; --muted:#cdb7a0; --accent:#d8a24a; --brand:#a73d3d; --shadow:rgba(0,0,0,.35); }
+  :root{ --bg:#160d06; --wood1:#3a2414; --wood2:#5a3620; --wood3:#7a4a2a; --ink:#1b110b; --paper:#f7f0e7; --paper2:#e7dac8; --smoke:#e8dccf; --muted:#cdb7a0; --accent:#d8a24a; --brand:#a73d3d; --shadow:rgba(0,0,0,.35); --red:#b12020; }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; color:var(--ink);
+    margin:0; color:var(--smoke);
     background:
       radial-gradient(1000px 600px at 0% 0%, rgba(215,160,90,.25), transparent 70%),
       radial-gradient(900px 600px at 100% 20%, rgba(167,61,61,.20), transparent 70%),
-      repeating-linear-gradient( 90deg, var(--wood1) 0 18px, var(--wood2) 18px 36px, var(--wood3) 36px 54px), var(--bg);
+      repeating-linear-gradient( 90deg, var(--wood1) 0 18px, var(--wood2) 18px 36px, var(--wood3) 36px 54px), #160d06;
     font:16px/1.45 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial;
   }
-  a{color:var(--smoke);text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.25)}
   .wrap{max-width:1200px;margin:0 auto;padding:20px}
-
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .brand{display:flex;align-items:center;gap:12px}
   .seal{width:44px;height:44px;border-radius:12px;background:radial-gradient(circle at 30% 30%, #f3d9a2, #b77f2c 65%, #5a361e 66%); outline:2px solid #301c10; box-shadow:0 3px 12px var(--shadow); display:grid;place-items:center}
@@ -30,16 +28,14 @@
   .title{font-family:"PT Serif", serif; font-weight:700; font-size:22px; letter-spacing:.3px;}
   .tab{appearance:none;border:0;cursor:pointer;padding:10px 14px;border-radius:12px;background:linear-gradient(180deg, #6a4026, #3f2616);color:var(--smoke);border:1px solid #2c1a0f;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 8px var(--shadow)}
   .tab.active{outline:2px solid var(--accent); box-shadow:0 0 0 3px rgba(216,162,74,.2), inset 0 1px 0 rgba(255,255,255,.1)}
-
   .panel{background:linear-gradient(180deg, #2d1b10, #1b120b); border:1px solid #2c1a0f; border-radius:16px; padding:16px; box-shadow:0 12px 30px var(--shadow)}
   .panel h2{font-family:"PT Serif", serif; font-size:16px; margin:0 0 10px 0; color:var(--smoke); letter-spacing:.03em}
-
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  input, .btn, textarea, select{font:inherit;color:var(--ink)}
+  input, .btn, textarea, select{font:inherit;color:var(--smoke)}
   input[type="text"], textarea, select{padding:11px 12px;border-radius:12px;background:#25170f;border:1px solid #3c2719;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   input[type="text"], select{height:42px}
   textarea{width:100%;min-height:120px;resize:vertical}
-  .btn{appearance:none;border-radius:12px;border:1px solid #3c2719;background:linear-gradient(180deg, #704129, #4e2e1b);padding:10px 12px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 8px var(--shadow)}
+  .btn{appearance:none;border-radius:12px;border:1px solid #3c2719;background:linear-gradient(180deg, #704129, #4e2e1b);padding:10px 12px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 8px var(--shadow);color:#f0e7de}
   .btn:hover{filter:brightness(1.06)}
   .btn.gold{background:linear-gradient(180deg,#e0b35d,#b9872f); color:#3b1d0a; border-color:#7a521c}
 
@@ -50,19 +46,18 @@
     background:
       radial-gradient(500px 200px at 30% 10%, rgba(216,162,74,.18), transparent 70%),
       conic-gradient(from 0deg, #2b4e30, #264a2b, #2d5a35, #2b4e30);
-    border:3px solid #254629; border-radius:22px; padding:16px; min-height:300px; position:relative
+    border:3px solid #254629; border-radius:22px; padding:16px; min-height:320px; position:relative
   }
   .felt-edge{position:absolute;inset:-10px; border-radius:28px; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0)); z-index:-1}
   .cards{display:flex;flex-wrap:wrap;gap:12px}
 
-  .card{width:90px;height:124px;border-radius:12px;background:linear-gradient(180deg,#f7f0e7,#e7dac8);color:#1b110b;border:1px solid #d0c1ad;display:grid;grid-template-rows:auto 1fr auto;box-shadow:0 4px 8px var(--shadow); user-select:none}
+  .card{width:90px;height:124px;border-radius:12px;background:linear-gradient(180deg,var(--paper),var(--paper2));color:var(--ink);border:1px solid #d0c1ad;display:grid;grid-template-rows:auto 1fr auto;box-shadow:0 4px 8px var(--shadow); user-select:none}
   .card .rank{font-weight:800;padding:6px 8px}
   .card .suit{display:grid;place-items:center;font-size:28px}
-  .card .corner{font-size:12px;color:#6a5a4b;opacity:.85;padding:6px 8px;text-align:right}
+  .card .corner{font-size:12px;opacity:.85;padding:6px 8px;text-align:right}
+  .card.red .rank,.card.red .suit,.card.red .corner{color:var(--red)}
   .card.trump{outline:2px solid var(--brand); box-shadow:0 0 0 3px rgba(167,61,61,.25)}
   .card.dragging{opacity:.7; transform:scale(1.04)}
-
-  /* defender card sits on top at slight angle */
   .pair{position:relative;width:90px;height:124px}
   .pair .attack{position:absolute;left:0;top:0;z-index:1}
   .pair .defend{position:absolute;left:14px;top:-10px;transform:rotate(10deg);z-index:2}
@@ -178,9 +173,9 @@
 
     <div class="table" id="tableDrop">
       <div class="felt-edge"></div>
-      <div class="row" style="margin-bottom:8px"><span class="small">Drag cards anywhere on the felt. Throw-ins are always enabled.</span></div>
+      <div class="row" style="margin-bottom:8px"><span class="small">Drag cards onto the felt to attack, or onto a pending attack to defend that one. Throw-ins are always enabled.</span></div>
       <div id="pairs" class="cards" style="margin-bottom:10px"></div>
-      <div class="row" style="margin-bottom:8px"><span class="small">Pending attacks</span></div>
+      <div class="row" style="margin-bottom:8px"><span class="small">Pending attacks (drop a defence directly on one):</span></div>
       <div id="attacks" class="cards"></div>
       <div id="turnHint" class="small" style="position:absolute;right:12px;bottom:12px">—</div>
     </div>
@@ -192,7 +187,7 @@
         <button class="btn" id="btnEnd" disabled>End attack</button>
         <button class="btn" id="btnSurrender" disabled>Surrender</button>
         <button class="btn" id="btnRestart">Restart</button>
-        <span id="info" class="small">Attacker may add while defender is defending. End attack when all current attacks are covered.</span>
+        <span id="info" class="small">End attack only when all current attacks are covered. Max 6 attacks per bout (total up to 12 cards with defences).</span>
       </div>
     </div>
 
@@ -211,7 +206,7 @@
 <div id="toast" style="display:none; position:fixed; right:16px; bottom:16px; z-index:9999; min-width:240px; max-width:420px; padding:12px 14px; border-radius:12px; border:1px solid #6a2323; background:linear-gradient(180deg,#5a2c2c,#3b1a1a); color:#f9eaea; box-shadow:0 10px 24px rgba(0,0,0,.35)"></div>
 
 <script>
-/* ===== Helpers & UI ===== */
+/* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const toast = (msg,ms=3000)=>{const t=$("#toast"); if(!t){alert(msg);return;} t.textContent=(typeof msg==='string')?msg:(msg?.message||String(msg)); t.style.display='block'; clearTimeout(t._timer); t._timer=setTimeout(()=>t.style.display='none',ms);};
@@ -279,7 +274,7 @@ function onMsg(m){
   else if(m.t==='restart' && state.isHost){hostStartGame(true);}
 }
 
-/* ===== Durak (throw-ins ON) ===== */
+/* ===== Durak logic (throw-ins ON) ===== */
 const SUITS=()=>['♠','♥','♦','♣'];
 const ranks = ()=> state.room?.ranks || (state.settings.deckSize===24? ['9','10','J','Q','K','A'] : ['6','7','8','9','10','J','Q','K','A']);
 const rIdx = r => ranks().indexOf(r);
@@ -288,11 +283,11 @@ const canBeat=(a,d,tr)=> (a && d) && (a.s===d.s? rIdx(d.r)>rIdx(a.r) : d.s===tr 
 const sortHand=(a,b)=>{const t=state.room?.trump,so={'♠':0,'♥':1,'♦':2,'♣':3}; const sa=(a.s===t?4:so[a.s]), sb=(b.s===t?4:so[b.s]); return sa!==sb? sa-sb : rIdx(a.r)-rIdx(b.r);};
 
 function ranksOnTable(r){ const set=new Set(); (r.table||[]).forEach(p=>{ if(p.attack) set.add(p.attack.r); if(p.defend) set.add(p.defend.r);}); (r.attacks||[]).forEach(a=>set.add(a.r)); return set; }
-function totalAttacks(r){ return (r.table?.length||0)+(r.attacks?.length||0); }
-function maxAttacks(r){ return Math.min(6, (r.hands[r.defenderUid]||[]).length); }
+function totalAttacks(r){ return (r.table?.length||0)+(r.attacks?.length||0); } // attack cards so far
+function startBout(r){ r.boutLimit = Math.min(6, r.hands[r.defenderUid].length); } // constant per bout
 function canAddAttack(r,card){
   const t=totalAttacks(r);
-  if(t >= maxAttacks(r)) return false;
+  if(t >= r.boutLimit) return false; // cap = 6 or defender hand at bout start
   if(t === 0) return true;            // first attack any rank
   return ranksOnTable(r).has(card.r); // afterwards ranks seen on the table only
 }
@@ -321,9 +316,10 @@ function hostStartGame(restart=false){
   state.room={status:'playing',deck,trump,trumpCard,ranks:ranks(),
     hands,stockCount:deck.length,discardCount:0,
     attackerUid:attacker,defenderUid:defender,turnUid:attacker,
-    phase:'attack', table:[], attacks:[], names:{A:state.name,B:state.peerName||'Opponent'},
+    phase:'attack', table:[], attacks:[], boutLimit:6,
+    names:{A:state.name,B:state.peerName||'Opponent'},
     turnDeadline:Date.now()+TURN_LIMIT_SEC*1000 };
-  setPhase(state.room,'attack');
+  startBout(state.room); setPhase(state.room,'attack');
   send({t:'init',room:state.room}); render();
   log(restart?'— Restarted':'— New game');
 }
@@ -343,12 +339,17 @@ function opAttack(uid,card){
   setPhase(r,'defend'); resetDeadline(); broadcast();
 }
 
-/* IMPORTANT FIX: accept defence whenever there is a pending attack (race-free) */
-function opDefend(uid,card){
+/* defend specific pending index (i), or auto-pick */
+function defendAtIndex(uid, card, i){
   const r=state.room; if(!r || uid!==r.defenderUid) return;
-  if(r.attacks.length===0) return; // nothing to defend yet
-  const a=r.attacks[0]; if(!a || !canBeat(a,card,r.trump)) return;
-  r.table.push({attack:a,defend:card}); r.attacks.shift();
+  if(r.attacks.length===0) return;
+  if(i==null){ // auto: first beatable
+    i = r.attacks.findIndex(a=>canBeat(a,card,r.trump));
+    if(i<0) return;
+  }
+  const a=r.attacks[i]; if(!a || !canBeat(a,card,r.trump)) return;
+  r.table.push({attack:a,defend:card});
+  r.attacks.splice(i,1);
   r.hands[uid]=r.hands[uid].filter(h=>!(h.s===card.s&&h.r===card.r));
   enforceState(r); resetDeadline(); broadcast();
 }
@@ -357,11 +358,13 @@ function endBoutToDiscard(){
   const r=state.room;
   const pile=r.table.flatMap(p=>[p.attack,p.defend]).filter(Boolean);
   r.discardCount+=pile.length; r.table=[]; r.attacks=[];
+  // refill: attacker first, then defender
   for(const uid of [r.attackerUid,r.defenderUid]){
     while(r.hands[uid].length<6 && r.deck.length>0){ r.hands[uid].push(r.deck.pop()); r.stockCount=r.deck.length; }
   }
-  [r.attackerUid,r.defenderUid]=[r.defenderUid,r.attackerUid]; // swap roles
-  setPhase(r,'attack'); checkGameEnd(r);
+  // swap roles and start next bout (new limit computed from new defender)
+  [r.attackerUid,r.defenderUid]=[r.defenderUid,r.attackerUid];
+  startBout(r); setPhase(r,'attack'); checkGameEnd(r);
 }
 
 function opEnd(uid){
@@ -376,10 +379,12 @@ function opTake(uid){
   const pile=r.attacks.concat(r.table.flatMap(p=>[p.attack,p.defend])).filter(Boolean);
   r.hands[r.defenderUid]=r.hands[r.defenderUid].concat(pile);
   r.attacks=[]; r.table=[];
+  // refill: attacker first, then defender
   for(const u of [r.attackerUid,r.defenderUid]){
     while(r.hands[u].length<6 && r.deck.length>0){ r.hands[u].push(r.deck.pop()); r.stockCount=r.deck.length; }
   }
-  setPhase(r,'attack'); // attacker continues
+  // attacker keeps turn; start a NEW bout and recompute limit based on current defender hand
+  startBout(r); setPhase(r,'attack');
   checkGameEnd(r);
   resetDeadline(); broadcast();
 }
@@ -406,7 +411,7 @@ function checkGameEnd(r){
 /* Guest → Host relay */
 function handleMoveFromGuest(m){ const uid='B';
   if(m.op==='attack') opAttack(uid,m.card);
-  else if(m.op==='defend') opDefend(uid,m.card);
+  else if(m.op==='defend') defendAtIndex(uid,m.card,m.i);
   else if(m.op==='take') opTake(uid);
   else if(m.op==='end') opEnd(uid);
 }
@@ -431,19 +436,24 @@ drop.addEventListener('drop',ev=>{
   if(!json) return;
   const c=JSON.parse(json); const r=state.room; if(!r) return;
   const amAtt=state.uid===r.attackerUid, amDef=state.uid===r.defenderUid;
-  let op=null;
-  // ✅ Defender can defend as long as there is at least one pending attack (race-free)
-  if(amDef && r.attacks.length>0) op='defend';
-  else if(amAtt && (r.phase==='attack' || r.phase==='defend' || r.phase==='add')) op='attack';
-  if(!op) return;
-  if(state.isHost){ if(op==='defend') opDefend(state.uid,c); else opAttack(state.uid,c); }
-  else { send({t:'move',op,card:c}); }
+
+  // Defender: auto-target the first beatable pending attack if multiple
+  if(amDef && r.attacks.length>0){
+    if(state.isHost) defendAtIndex(state.uid,c,null);
+    else send({t:'move',op:'defend',card:c}); // host will auto-pick target
+    return;
+  }
+  // Attacker adding / starting
+  if(amAtt && (r.phase==='attack' || r.phase==='defend' || r.phase==='add')){
+    if(state.isHost) opAttack(state.uid,c); else send({t:'move',op:'attack',card:c});
+  }
 });
 
 /* ===== Rendering ===== */
 function makeCardEl(c,context='hand'){
   const el=document.createElement('div');
-  el.className='card'; if(state.room && state.room.trump===c.s) el.classList.add('trump');
+  el.className='card'; if(c.s==='♥' || c.s==='♦') el.classList.add('red'); // red suits
+  if(state.room && state.room.trump===c.s) el.classList.add('trump');
   el.innerHTML=`<div class="rank">${c.r}</div><div class="suit">${c.s}</div><div class="corner">${c.r}${c.s}</div>`;
   if(context==='hand'){ el.draggable=true; el.addEventListener('dragstart',e=>dragStart(e,c)); el.addEventListener('dragend',dragEnd); }
   return el;
@@ -455,17 +465,16 @@ function render(){
   $('#oppName').textContent=r.names[other]; $('#oppCount').textContent=r.hands[other].length;
   $('#youRole').textContent=state.uid===r.attackerUid?'Attacker':'Defender';
 
-  // ✅ Correct, turn-aware hint (fix for both seeing "Your move • attack")
+  // Turn-aware hint
   const myTurn = state.uid===r.turnUid;
   let phaseWord = r.phase==='add' ? 'add' : r.phase;
   let hint = myTurn ? `Your move • ${phaseWord}` : `Opponent’s move • ${phaseWord}`;
-  // Attacker can still add during defend; make that clear when it's NOT your turn
   if(!myTurn && r.phase==='defend' && state.uid===r.attackerUid) hint = 'Opponent defends • you may still add';
   $('#turnHint').textContent = hint;
 
-  // Controls
+  // Buttons
   $('#btnStartGame').disabled=!(state.isHost && state.connected && r.status!=='playing');
-  $('#btnTake').disabled=!(r.phase==='defend' && state.uid===r.defenderUid);
+  $('#btnTake').disabled=!(r.attacks.length>0 && state.uid===r.defenderUid);
   const canEnd = (state.uid===r.attackerUid) && (r.attacks.length===0) && r.table.length>0 && r.table.every(p=>p.defend) && (r.status==='playing');
   $('#btnEnd').disabled=!canEnd;
   $('#btnSurrender').disabled=!(r.status==='playing');
@@ -477,7 +486,7 @@ function render(){
   const hand=$('#yourHand'); hand.innerHTML='';
   r.hands[state.uid].slice().sort(sortHand).forEach(c=>hand.appendChild(makeCardEl(c,'hand')));
 
-  // Table pairs (attack under, defend on top at slight angle)
+  // Table pairs (attack under, defend on top)
   const pairs=$('#pairs'); pairs.innerHTML='';
   r.table.forEach(p=>{ const wrap=document.createElement('div'); wrap.className='pair';
     const a=makeCardEl(p.attack,'table'); a.classList.add('attack'); wrap.appendChild(a);
@@ -485,9 +494,26 @@ function render(){
     pairs.appendChild(wrap);
   });
 
-  // Pending attacks
+  // Pending attacks (each is its own drop target so you can defend specific ones)
   const attacks=$('#attacks'); attacks.innerHTML='';
-  r.attacks.forEach(a=>attacks.appendChild(makeCardEl(a,'attack')));
+  r.attacks.forEach((a,i)=>{
+    const el=makeCardEl(a,'attack');
+    el.dataset.idx=i;
+    // Allow defender to drop exactly on this attack to cover it
+    el.addEventListener('dragover',ev=>{
+      if(state.uid===r.defenderUid){ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; }
+    });
+    el.addEventListener('drop',ev=>{
+      if(state.uid!==r.defenderUid) return;
+      ev.preventDefault();
+      const json = ev.dataTransfer.getData('application/json') || ev.dataTransfer.getData('text/plain');
+      if(!json) return;
+      const c=JSON.parse(json);
+      if(state.isHost) defendAtIndex(state.uid,c,i);
+      else send({t:'move',op:'defend',card:c,i});
+    });
+    attacks.appendChild(el);
+  });
 }
 
 /* ===== UI buttons ===== */
@@ -497,22 +523,21 @@ $('#btnSurrender').onclick=()=>{ if(state.isHost) opSurrender(state.uid); else s
 $('#btnLeaveRoom').onclick=()=>{ try{state.dc?.close();state.pc?.close();}catch{} state.connected=false; state.room=null; state.dc=null; state.pc=null; state.uid=null; nav('connect'); };
 $('#btnRestart').onclick=()=>{ if(state.isHost) hostStartGame(true); else send({t:'restart'}); };
 
-/* ===== Lobby binding ===== */
+/* Lobby binding */
 function updateLobby(){ state.settings.deckSize=parseInt($('#deckSize').value,10); }
 $('#deckSize').onchange=updateLobby; updateLobby();
 
-/* ===== Init ===== */
+/* Init */
 nav('home');
 setInterval(()=>{ const r=state.room; if(!r) return; if(views.room.classList.contains('active')) render(); }, 300);
 </script>
 
 <!-- Notes:
-  • Throw-ins are ALWAYS ON. Attacker may add cards with ranks matching any rank already on the table (including ranks used for defence), limited to min(6, defender’s hand).
-  • “Your move” now strictly follows turnUid — no more both seeing “Your move • attack”.
-  • Defender may defend as soon as at least one attack is pending (race-free).
-  • End attack after all current attacks are defended → discard, refill (attacker→defender), swap roles, new attack.
-  • If defender taps Take, all cards go to defender → refill (attacker→defender) → attacker keeps turn.
-  • Surrender + 60s turn timer. Restart re-deals cleanly.
+  • Throw-ins ALWAYS ON. Attacker may add up to boutLimit (min 6, defender’s hand at bout start). With defences, that’s up to 12 cards on the table.
+  • Hearts and Diamonds render red (like real decks).
+  • To defend a specific pending attack, drop your defending card directly onto that pending card. Dropping on the felt auto-picks the first beatable attack.
+  • End attack only when all current attacks are covered → discard, refill (attacker→defender), swap roles, start next bout.
+  • If defender Takes, they collect the whole bout → refill (attacker→defender) → same attacker starts a NEW bout (new boutLimit).
 -->
 </body>
 </html>
