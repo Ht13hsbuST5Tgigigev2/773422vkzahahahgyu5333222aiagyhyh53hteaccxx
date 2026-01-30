@@ -1,31 +1,30 @@
-/* app.js — RBLX UI Designer (v3)
-   What changed (per your feedback):
-   ✅ Backspace NEVER deletes (only Delete / Del key, or context menu delete)
-   ✅ Explorer now behaves much closer to Roblox Studio:
-      - Drag ABOVE / BELOW an item to reorder inside the same parent (updates ZIndex)
-      - Drag INTO a Frame/ScrollingFrame row to parent it (updates parentId)
-      - Move Up / Move Down buttons also reorder
-      - Context menu also includes Move Up / Move Down
-   ✅ UI Objects list includes the Studio ones you showed (and exports them):
-      UIAspectRatioConstraint, UICorner, UIGradient, UIGridLayout, UIListLayout, UIPadding,
-      UIPageLayout, UIScale, UISizeConstraint, UIStroke, UITableLayout, UITextSizeConstraint
-      (plus optional UIFlexLayout if you kept it in HTML)
-   ✅ Canvas parenting still works: drop an object onto a Frame/ScrollingFrame in the canvas to parent
+/* app.js — RBLX UI Designer (v4, "fix everything" build)
+   Goal: Never break, never crash, all core features working.
 
-   Notes:
-   - Explorer reorder = ZIndex order within the SAME parent (like the main “on top” ordering)
-   - We store positions as anchor-position within parent space (x,y), so parenting is stable.
+   ✅ Defensive DOM bindings: missing elements won't crash the app
+   ✅ Canvas: select, drag to move, handles to resize
+   ✅ Canvas parenting: drag and drop onto Frame/ScrollingFrame to parent
+   ✅ Explorer: select, drag above/below to reorder (ZIndex), drag inside to parent
+   ✅ Delete only on DEL (Backspace never deletes) + right click context menu delete
+   ✅ UI objects supported and exported
+   ✅ Save/Load/New/Export/Copy/Download works
+
+   NOTE: This is a browser preview tool. Roblox layout engines (UIListLayout etc) won't be fully simulated visually,
+         but export includes them.
+
 */
 
 (() => {
   "use strict";
 
-  // -------------------- Helpers --------------------
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  // -------------------- Utilities --------------------
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const round = (n) => Math.round(n);
+  const round = (n) => Math.round(Number(n) || 0);
   const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+  const isMac = () => /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
   function hexToRgb(hex) {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec((hex || "").trim());
@@ -36,7 +35,6 @@
     const h = (x) => clamp(x, 0, 255).toString(16).padStart(2, "0");
     return `#${h(r)}${h(g)}${h(b)}`;
   }
-
   function escapeLuaString(s) {
     return String(s ?? "")
       .replace(/\\/g, "\\\\")
@@ -51,89 +49,38 @@
     return cleaned || "node";
   }
 
-  // -------------------- DOM --------------------
-  const canvasOuter = $("#canvasOuter");
-  const canvas = $("#canvas");
-  const explorer = $("#explorer");
-
-  const guiNameEl = $("#guiName");
-  const resetOnSpawnEl = $("#resetOnSpawn");
-  const guiParentEl = $("#guiParent");
-  const outputModeEl = $("#outputMode");
-
-  const btnNew = $("#btnNew");
-  const btnSave = $("#btnSave");
-  const btnLoad = $("#btnLoad");
-  const btnExport = $("#btnExport");
-  const btnCopy = $("#btnCopy");
-  const btnDownload = $("#btnDownload");
-  const btnDuplicate = $("#btnDuplicate");
-
-  const btnMoveUp = $("#btnMoveUp");
-  const btnMoveDown = $("#btnMoveDown");
-
-  const exportBox = $("#exportBox");
-
-  const emptyProps = $("#emptyProps");
-  const propsWrap = $("#props");
-
-  const propName = $("#propName");
-  const propParent = $("#propParent");
-  const propX = $("#propX");
-  const propY = $("#propY");
-  const propW = $("#propW");
-  const propH = $("#propH");
-  const propAnchor = $("#propAnchor");
-  const propZIndex = $("#propZIndex");
-
-  const propBgColor = $("#propBgColor");
-  const propBgAlpha = $("#propBgAlpha");
-  const propBgAlphaLabel = $("#propBgAlphaLabel");
-  const propBorder = $("#propBorder");
-
-  const propText = $("#propText");
-  const propTextColor = $("#propTextColor");
-  const propTextScaled = $("#propTextScaled");
-  const propFont = $("#propFont");
-
-  const propImage = $("#propImage");
-
-  const propCanvasW = $("#propCanvasW");
-  const propCanvasH = $("#propCanvasH");
-  const propScrollBar = $("#propScrollBar");
-
-  const uiObjectsList = $("#uiObjectsList");
-
-  const chkSafeArea = $("#chkSafeArea");
-  const safeArea = $("#safeArea");
-  const zoom = $("#zoom");
-  const zoomLabel = $("#zoomLabel");
-
-  const statusLeft = $("#statusLeft");
-  const statusRight = $("#statusRight");
-
-  // toolbox tabs
-  const tabInstances = $("#tabInstances");
-  const tabUiObjects = $("#tabUiObjects");
-  const toolboxInstances = $("#toolboxInstances");
-  const toolboxUiObjects = $("#toolboxUiObjects");
-
-  // context menu
-  const ctxMenu = $("#ctxMenu");
-  const ctxDelete = $("#ctxDelete");
-  const ctxDuplicate = $("#ctxDuplicate");
-  const ctxMoveUp = $("#ctxMoveUp");
-  const ctxMoveDown = $("#ctxMoveDown");
-
-  // -------------------- Canvas size --------------------
+  // -------------------- Constants --------------------
+  const STORAGE_KEY = "rblx-ui-designer:v4";
   const CANVAS_W = 980;
   const CANVAS_H = 620;
-  canvas.style.width = `${CANVAS_W}px`;
-  canvas.style.height = `${CANVAS_H}px`;
+
+  const SUPPORTED_INSTANCES = new Set([
+    "Frame",
+    "ScrollingFrame",
+    "TextLabel",
+    "TextButton",
+    "TextBox",
+    "ImageLabel",
+    "ImageButton",
+    "ViewportFrame",
+  ]);
+
+  const SUPPORTED_UI_OBJECTS = new Set([
+    "UIAspectRatioConstraint",
+    "UICorner",
+    "UIGradient",
+    "UIGridLayout",
+    "UIListLayout",
+    "UIPadding",
+    "UIPageLayout",
+    "UIScale",
+    "UISizeConstraint",
+    "UIStroke",
+    "UITableLayout",
+    "UITextSizeConstraint",
+  ]);
 
   // -------------------- State --------------------
-  const STORAGE_KEY = "rblx-ui-designer:v3";
-
   const state = {
     project: {
       guiName: "HelloWorldGui",
@@ -147,14 +94,93 @@
     showSafeArea: false,
   };
 
+  // -------------------- DOM (defensive) --------------------
+  const dom = {
+    canvasOuter: $("#canvasOuter"),
+    canvas: $("#canvas"),
+    explorer: $("#explorer"),
+
+    guiName: $("#guiName"),
+    resetOnSpawn: $("#resetOnSpawn"),
+    guiParent: $("#guiParent"),
+    outputMode: $("#outputMode"),
+
+    btnNew: $("#btnNew"),
+    btnSave: $("#btnSave"),
+    btnLoad: $("#btnLoad"),
+    btnExport: $("#btnExport"),
+    btnCopy: $("#btnCopy"),
+    btnDownload: $("#btnDownload"),
+
+    btnMoveUp: $("#btnMoveUp"),
+    btnMoveDown: $("#btnMoveDown"),
+    btnDuplicate: $("#btnDuplicate"),
+
+    exportBox: $("#exportBox"),
+
+    emptyProps: $("#emptyProps"),
+    propsWrap: $("#props"),
+
+    propName: $("#propName"),
+    propParent: $("#propParent"),
+    propX: $("#propX"),
+    propY: $("#propY"),
+    propW: $("#propW"),
+    propH: $("#propH"),
+    propAnchor: $("#propAnchor"),
+    propZIndex: $("#propZIndex"),
+
+    propBgColor: $("#propBgColor"),
+    propBgAlpha: $("#propBgAlpha"),
+    propBgAlphaLabel: $("#propBgAlphaLabel"),
+    propBorder: $("#propBorder"),
+
+    propText: $("#propText"),
+    propTextColor: $("#propTextColor"),
+    propTextScaled: $("#propTextScaled"),
+    propFont: $("#propFont"),
+
+    propImage: $("#propImage"),
+
+    propCanvasW: $("#propCanvasW"),
+    propCanvasH: $("#propCanvasH"),
+    propScrollBar: $("#propScrollBar"),
+
+    uiObjectsList: $("#uiObjectsList"),
+
+    chkSafeArea: $("#chkSafeArea"),
+    safeArea: $("#safeArea"),
+    zoom: $("#zoom"),
+    zoomLabel: $("#zoomLabel"),
+
+    statusLeft: $("#statusLeft"),
+    statusRight: $("#statusRight"),
+
+    tabInstances: $("#tabInstances"),
+    tabUiObjects: $("#tabUiObjects"),
+    toolboxInstances: $("#toolboxInstances"),
+    toolboxUiObjects: $("#toolboxUiObjects"),
+
+    ctxMenu: $("#ctxMenu"),
+    ctxDelete: $("#ctxDelete"),
+    ctxDuplicate: $("#ctxDuplicate"),
+    ctxMoveUp: $("#ctxMoveUp"),
+    ctxMoveDown: $("#ctxMoveDown"),
+  };
+
+  // Ensure canvas element exists and size it
+  if (dom.canvas) {
+    dom.canvas.style.width = `${CANVAS_W}px`;
+    dom.canvas.style.height = `${CANVAS_H}px`;
+  }
+
   // -------------------- Type helpers --------------------
   const isContainer = (n) => n && (n.type === "Frame" || n.type === "ScrollingFrame");
   const isTextType = (n) => n && (n.type === "TextLabel" || n.type === "TextButton" || n.type === "TextBox");
   const isImageType = (n) => n && (n.type === "ImageLabel" || n.type === "ImageButton");
 
-  function byId() {
-    return new Map(state.nodes.map((n) => [n.id, n]));
-  }
+  const getNode = (id) => state.nodes.find((n) => n.id === id) || null;
+  const idMap = () => new Map(state.nodes.map((n) => [n.id, n]));
 
   function childrenMap() {
     const m = new Map();
@@ -163,15 +189,10 @@
       if (!m.has(pid)) m.set(pid, []);
       m.get(pid).push(n.id);
     }
-    // stable sort by zIndex
     for (const [pid, ids] of m.entries()) {
       ids.sort((a, b) => ((getNode(a)?.zIndex ?? 1) - (getNode(b)?.zIndex ?? 1)));
     }
     return m;
-  }
-
-  function getNode(id) {
-    return state.nodes.find((n) => n.id === id) || null;
   }
 
   function parentSize(pid, map) {
@@ -227,8 +248,8 @@
   }
 
   function setStatus(left, right = "") {
-    if (typeof left === "string") statusLeft.textContent = left;
-    if (typeof right === "string") statusRight.textContent = right;
+    if (dom.statusLeft) dom.statusLeft.textContent = left ?? "";
+    if (dom.statusRight) dom.statusRight.textContent = right ?? "";
   }
 
   function selectNode(id) {
@@ -246,56 +267,60 @@
   }
 
   // -------------------- Defaults --------------------
-  function defaultProject() {
-    const textId = uid();
+  function defaultNodeText() {
     return {
-      project: {
-        guiName: "HelloWorldGui",
-        resetOnSpawn: false,
-        parent: "PlayerGui",
-        outputMode: "variables",
-      },
-      nodes: [
-        {
-          id: textId,
-          type: "TextLabel",
-          name: "TextLabel",
-          parentId: "ROOT",
-          x: round(CANVAS_W * 0.5),
-          y: round(CANVAS_H * 0.5),
-          w: 300,
-          h: 100,
-          anchorX: 0.5,
-          anchorY: 0.5,
-          zIndex: 1,
-          bgColor: { r: 30, g: 30, b: 30 },
-          bgAlpha: 1,
-          border: false,
-          text: "hello world",
-          textColor: { r: 255, g: 255, b: 255 },
-          textScaled: true,
-          font: "SourceSansBold",
-          image: "",
-          canvasSize: { w: 0, h: 0 },
-          scrollBarThickness: 6,
-          uiObjects: [],
-        },
-      ],
-      selectedId: textId,
-      zoom: 1,
-      showSafeArea: false,
+      id: uid(),
+      type: "TextLabel",
+      name: "TextLabel",
+      parentId: "ROOT",
+      x: round(CANVAS_W * 0.5),
+      y: round(CANVAS_H * 0.5),
+      w: 300,
+      h: 100,
+      anchorX: 0.5,
+      anchorY: 0.5,
+      zIndex: 1,
+      bgColor: { r: 30, g: 30, b: 30 },
+      bgAlpha: 1,
+      border: false,
+      text: "hello world",
+      textColor: { r: 255, g: 255, b: 255 },
+      textScaled: true,
+      font: "SourceSansBold",
+      image: "",
+      canvasSize: { w: 0, h: 0 },
+      scrollBarThickness: 8,
+      uiObjects: [],
     };
   }
 
-  // -------------------- Creation --------------------
+  function newProject() {
+    const node = defaultNodeText();
+    state.project = {
+      guiName: "HelloWorldGui",
+      resetOnSpawn: false,
+      parent: "PlayerGui",
+      outputMode: "variables",
+    };
+    state.nodes = [node];
+    state.selectedId = node.id;
+    state.zoom = 1;
+    state.showSafeArea = false;
+    if (dom.chkSafeArea) dom.chkSafeArea.checked = false;
+    if (dom.exportBox) dom.exportBox.value = "";
+    setStatus("New project created.", "");
+    render();
+    exportLua();
+  }
+
+  // -------------------- Create node --------------------
   function nextZIndex(parentId) {
     const siblings = state.nodes.filter((n) => (n.parentId || "ROOT") === parentId);
-    const max = siblings.reduce((acc, n) => Math.max(acc, n.zIndex ?? 1), 0);
-    return max + 1;
+    return siblings.reduce((acc, n) => Math.max(acc, n.zIndex ?? 1), 0) + 1;
   }
 
   function makeNode(type, parentId = "ROOT") {
-    const map = byId();
+    const map = idMap();
     const ps = parentSize(parentId, map);
 
     const base = {
@@ -324,7 +349,7 @@
       image: "",
 
       canvasSize: { w: 0, h: 0 },
-      scrollBarThickness: 6,
+      scrollBarThickness: 8,
 
       uiObjects: [],
     };
@@ -337,7 +362,7 @@
       base.w = 360; base.h = 220;
       base.bgColor = { r: 35, g: 35, b: 42 };
       base.canvasSize = { w: 520, h: 360 };
-      base.scrollBarThickness = 8;
+      base.scrollBarThickness = 10;
     }
     if (type === "TextLabel") {
       base.w = 300; base.h = 100;
@@ -372,45 +397,20 @@
   }
 
   function createNode(type) {
+    if (!SUPPORTED_INSTANCES.has(type)) return;
     const node = makeNode(type, "ROOT");
     state.nodes.push(node);
     selectNode(node.id);
   }
 
   // -------------------- UI Objects --------------------
-  const SUPPORTED_UI_OBJECTS = new Set([
-    "UIAspectRatioConstraint",
-    "UICorner",
-    "UIGradient",
-    "UIGridLayout",
-    "UIListLayout",
-    "UIPadding",
-    "UIPageLayout",
-    "UIScale",
-    "UISizeConstraint",
-    "UIStroke",
-    "UITableLayout",
-    "UITextSizeConstraint",
-    // optional extras if you have them in HTML
-    "UIFlexLayout",
-  ]);
-
   function addUiObject(type) {
-    if (!SUPPORTED_UI_OBJECTS.has(type)) {
-      setStatus(`UI Object not supported yet: ${type}`, "");
-      return;
-    }
-    if (!state.selectedId) {
-      setStatus("Select an instance first to add UI Objects.", "");
-      return;
-    }
+    if (!SUPPORTED_UI_OBJECTS.has(type)) return;
+    if (!state.selectedId) { setStatus("Select an instance first.", ""); return; }
     const n = getNode(state.selectedId);
     if (!n) return;
 
-    n.uiObjects = n.uiObjects || [];
     const obj = { id: uid(), type, props: {} };
-
-    // defaults (exported)
     if (type === "UICorner") obj.props = { cornerRadius: 8 };
     if (type === "UIStroke") obj.props = { thickness: 2, color: { r: 255, g: 255, b: 255 }, transparency: 0.2 };
     if (type === "UITextSizeConstraint") obj.props = { minTextSize: 8, maxTextSize: 48 };
@@ -419,8 +419,9 @@
     if (type === "UIScale") obj.props = { scale: 1.0 };
     if (type === "UIPadding") obj.props = { left: 0, right: 0, top: 0, bottom: 0 };
 
+    n.uiObjects = n.uiObjects || [];
     n.uiObjects.push(obj);
-    setStatus(`Added ${type} to ${n.name || n.type}.`, "");
+    setStatus(`Added ${type}.`, "");
     render();
   }
 
@@ -428,13 +429,19 @@
     const n = getNode(nodeId);
     if (!n) return;
     n.uiObjects = (n.uiObjects || []).filter((o) => o.id !== uiId);
-    setStatus("Removed UI Object.", "");
     render();
   }
 
   // -------------------- Parenting / Ordering --------------------
+  function normalizeZ(parentId) {
+    const sibs = state.nodes
+      .filter((x) => (x.parentId || "ROOT") === parentId)
+      .sort((a, b) => (a.zIndex ?? 1) - (b.zIndex ?? 1));
+    sibs.forEach((n, i) => (n.zIndex = i + 1));
+  }
+
   function reparentNode(nodeId, newParentId) {
-    const map = byId();
+    const map = idMap();
     const n = map.get(nodeId);
     if (!n) return;
 
@@ -443,45 +450,26 @@
 
     // keep world anchor constant
     const worldA = absAnchor(nodeId, map);
+
     n.parentId = newParentId;
 
-    const newParentTL = newParentId === "ROOT" ? { x: 0, y: 0 } : absTopLeft(newParentId, map);
-    n.x = worldA.x - newParentTL.x;
-    n.y = worldA.y - newParentTL.y;
+    const newTL = newParentId === "ROOT" ? { x: 0, y: 0 } : absTopLeft(newParentId, map);
+    n.x = worldA.x - newTL.x;
+    n.y = worldA.y - newTL.y;
 
-    // set to top of new parent
     n.zIndex = nextZIndex(newParentId);
 
     clampInParent(n, map);
-    normalizeZIndices(newParentId);
-    normalizeZIndices(oldParent);
+    normalizeZ(newParentId);
+    normalizeZ(oldParent);
   }
 
-  function siblingsOf(id) {
-    const n = getNode(id);
-    if (!n) return [];
-    const pid = n.parentId || "ROOT";
-    return state.nodes
-      .filter((x) => (x.parentId || "ROOT") === pid)
-      .sort((a, b) => (a.zIndex ?? 1) - (b.zIndex ?? 1));
-  }
-
-  function normalizeZIndices(parentId) {
-    const sibs = state.nodes
-      .filter((x) => (x.parentId || "ROOT") === parentId)
-      .sort((a, b) => (a.zIndex ?? 1) - (b.zIndex ?? 1));
-    sibs.forEach((n, i) => (n.zIndex = i + 1));
-  }
-
-  // Insert dragId before/after targetId in target's parent
   function reorderRelative(dragId, targetId, pos /* "above"|"below" */) {
     const drag = getNode(dragId);
     const target = getNode(targetId);
     if (!drag || !target) return;
 
     const pid = target.parentId || "ROOT";
-
-    // Ensure drag is in same parent
     if ((drag.parentId || "ROOT") !== pid) {
       reparentNode(dragId, pid);
     }
@@ -496,13 +484,23 @@
 
     const [item] = sibs.splice(dIdx, 1);
 
-    let insertAt = tIdx;
-    if (pos === "below") insertAt = tIdx + (dIdx < tIdx ? 0 : 1);
+    let insertAt;
     if (pos === "above") insertAt = tIdx + (dIdx < tIdx ? -1 : 0);
-    insertAt = clamp(insertAt, 0, sibs.length);
+    else insertAt = tIdx + (dIdx < tIdx ? 0 : 1);
 
+    insertAt = clamp(insertAt, 0, sibs.length);
     sibs.splice(insertAt, 0, item);
+
     sibs.forEach((n, i) => (n.zIndex = i + 1));
+  }
+
+  function siblingsOf(id) {
+    const n = getNode(id);
+    if (!n) return [];
+    const pid = n.parentId || "ROOT";
+    return state.nodes
+      .filter((x) => (x.parentId || "ROOT") === pid)
+      .sort((a, b) => (a.zIndex ?? 1) - (b.zIndex ?? 1));
   }
 
   function moveUpSelected() {
@@ -511,13 +509,10 @@
     const sibs = siblingsOf(id);
     const idx = sibs.findIndex((n) => n.id === id);
     if (idx <= 0) return;
-    // swap with previous
     const a = sibs[idx - 1];
     const b = sibs[idx];
-    const z = a.zIndex;
-    a.zIndex = b.zIndex;
-    b.zIndex = z;
-    normalizeZIndices(b.parentId || "ROOT");
+    const z = a.zIndex; a.zIndex = b.zIndex; b.zIndex = z;
+    normalizeZ(b.parentId || "ROOT");
     render();
   }
 
@@ -526,17 +521,61 @@
     if (!id) return;
     const sibs = siblingsOf(id);
     const idx = sibs.findIndex((n) => n.id === id);
-    if (idx === -1 || idx >= sibs.length - 1) return;
+    if (idx < 0 || idx >= sibs.length - 1) return;
     const a = sibs[idx];
     const b = sibs[idx + 1];
-    const z = a.zIndex;
-    a.zIndex = b.zIndex;
-    b.zIndex = z;
-    normalizeZIndices(a.parentId || "ROOT");
+    const z = a.zIndex; a.zIndex = b.zIndex; b.zIndex = z;
+    normalizeZ(a.parentId || "ROOT");
     render();
   }
 
-  // -------------------- Render (Canvas + Explorer + Properties) --------------------
+  // -------------------- Duplicate / Delete --------------------
+  function duplicateSelected() {
+    if (!state.selectedId) return;
+    const n = getNode(state.selectedId);
+    if (!n) return;
+
+    const copy = JSON.parse(JSON.stringify(n));
+    copy.id = uid();
+    copy.name = (n.name || n.type) + "Copy";
+    copy.zIndex = nextZIndex(copy.parentId || "ROOT");
+    copy.x += 12; copy.y += 12;
+
+    const map = idMap();
+    clampInParent(copy, map);
+
+    state.nodes.push(copy);
+    selectNode(copy.id);
+  }
+
+  function deleteSelected() {
+    if (!state.selectedId) return;
+    const id = state.selectedId;
+
+    // remove subtree
+    const toRemove = new Set([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const n of state.nodes) {
+        if (toRemove.has(n.parentId) && !toRemove.has(n.id)) {
+          toRemove.add(n.id);
+          changed = true;
+        }
+      }
+    }
+
+    const removed = getNode(id);
+    const oldParent = removed ? (removed.parentId || "ROOT") : "ROOT";
+
+    state.nodes = state.nodes.filter((n) => !toRemove.has(n.id));
+    state.selectedId = null;
+
+    normalizeZ(oldParent);
+    render();
+  }
+
+  // -------------------- Rendering --------------------
   function fontToCss(font) {
     switch (font) {
       case "Gotham":
@@ -550,47 +589,28 @@
         return "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
     }
   }
-  function cssWeightForFont(font) {
+  function weightForFont(font) {
     if (font === "SourceSansBold" || font === "GothamBold") return "700";
     return "500";
   }
 
-  function render() {
-    guiNameEl.value = state.project.guiName;
-    resetOnSpawnEl.value = String(state.project.resetOnSpawn);
-    guiParentEl.value = state.project.parent;
-    outputModeEl.value = state.project.outputMode;
-
-    canvasOuter.style.setProperty("--zoom", String(state.zoom));
-    zoom.value = String(Math.round(state.zoom * 100));
-    zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
-    safeArea.hidden = !state.showSafeArea;
-
-    // ----- Canvas
-    canvas.innerHTML = "";
-    const map = byId();
-    const ch = childrenMap();
+  function renderCanvas(map, ch) {
+    if (!dom.canvas) return;
+    dom.canvas.innerHTML = "";
 
     const makeNodeDom = (n) => {
       const el = document.createElement("div");
-      el.className = `node node-${n.type.toLowerCase()}${n.id === state.selectedId ? " selected" : ""}`;
+      el.className = `node${n.id === state.selectedId ? " selected" : ""}${isContainer(n) ? " container" : ""}${n.type === "ScrollingFrame" ? " scrolling" : ""}${(n.type === "TextButton" || n.type === "ImageButton") ? " clickable" : ""}${n.type === "TextBox" ? " textbox" : ""}`;
       el.dataset.id = n.id;
 
-      // anchor-based positioning
       el.style.left = `${n.x}px`;
       el.style.top = `${n.y}px`;
       el.style.width = `${n.w}px`;
       el.style.height = `${n.h}px`;
       el.style.transform = `translate(${-n.anchorX * 100}%, ${-n.anchorY * 100}%)`;
       el.style.zIndex = String(n.zIndex ?? 1);
-
       el.style.background = `rgba(${n.bgColor.r},${n.bgColor.g},${n.bgColor.b},${n.bgAlpha})`;
       el.style.border = n.border ? "1px solid rgba(255,255,255,0.18)" : "1px solid transparent";
-
-      if (isContainer(n)) {
-        el.classList.add("container");
-        if (n.type === "ScrollingFrame") el.classList.add("scrolling");
-      }
 
       if (isTextType(n)) {
         const txt = document.createElement("div");
@@ -598,11 +618,9 @@
         txt.textContent = n.text ?? "";
         txt.style.color = `rgb(${n.textColor.r},${n.textColor.g},${n.textColor.b})`;
         txt.style.fontFamily = fontToCss(n.font);
-        txt.style.fontWeight = cssWeightForFont(n.font);
+        txt.style.fontWeight = weightForFont(n.font);
         txt.style.fontSize = n.textScaled ? "calc(12px + 1.1vw)" : "16px";
         el.appendChild(txt);
-        if (n.type === "TextButton") el.classList.add("clickable");
-        if (n.type === "TextBox") el.classList.add("textbox");
       }
 
       if (isImageType(n)) {
@@ -612,15 +630,14 @@
         if (src && !src.startsWith("rbxassetid://")) img.style.backgroundImage = `url("${src.replace(/"/g, '\\"')}")`;
         else img.classList.add("placeholder");
         el.appendChild(img);
-        if (n.type === "ImageButton") el.classList.add("clickable");
       }
 
-      // children layer
+      // children container
       const inner = document.createElement("div");
       inner.className = "node-inner";
       el.appendChild(inner);
 
-      // handles
+      // resize handles
       const handles = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
       for (const h of handles) {
         const hd = document.createElement("div");
@@ -633,8 +650,8 @@
     };
 
     const build = (pid, parentEl) => {
-      const ids = (ch.get(pid) || []).slice();
-      ids.sort((a, b) => ((map.get(a)?.zIndex ?? 1) - (map.get(b)?.zIndex ?? 1)));
+      const ids = (ch.get(pid) || []).slice()
+        .sort((a, b) => ((map.get(a)?.zIndex ?? 1) - (map.get(b)?.zIndex ?? 1)));
       for (const id of ids) {
         const n = map.get(id);
         if (!n) continue;
@@ -644,22 +661,14 @@
       }
     };
 
-    build("ROOT", canvas);
-
-    // ----- Explorer
-    renderExplorer(map, ch);
-
-    // ----- Properties
-    renderProperties(map);
-
-    // export buttons
-    btnCopy.disabled = !(exportBox.value || "").trim();
-    btnDownload.disabled = btnCopy.disabled;
+    build("ROOT", dom.canvas);
   }
 
   function renderExplorer(map, ch) {
-    explorer.innerHTML = "";
+    if (!dom.explorer) return;
+    dom.explorer.innerHTML = "";
 
+    // Root row
     const rootRow = document.createElement("div");
     rootRow.className = "ex-row ex-root-row";
     rootRow.dataset.id = "ROOT";
@@ -668,11 +677,10 @@
       <span class="ex-name">${state.project.guiName || "ScreenGui"}</span>
       <span class="ex-z mono"></span>
     `;
-    explorer.appendChild(rootRow);
+    dom.explorer.appendChild(rootRow);
 
-    // Drag state for explorer
     const clearDropMarks = () => {
-      $$(".ex-row", explorer).forEach((r) => {
+      $$(".ex-row", dom.explorer).forEach((r) => {
         r.classList.remove("drop-above", "drop-below", "drop-inside");
         r.dataset.drop = "";
       });
@@ -685,11 +693,10 @@
       const bottomZone = rect.height * 0.25;
 
       const id = row.dataset.id;
-      const n = id === "ROOT" ? null : map.get(id);
+      if (id === "ROOT") return y <= rect.height / 2 ? "above" : "below";
 
-      // For containers: middle zone means "inside"
+      const n = map.get(id);
       if (n && isContainer(n) && y > topZone && y < rect.height - bottomZone) return "inside";
-      // Otherwise above/below
       return y <= rect.height / 2 ? "above" : "below";
     }
 
@@ -706,10 +713,7 @@
         <span class="ex-z mono">z:${n.zIndex ?? 1}</span>
       `;
 
-      row.addEventListener("click", (e) => {
-        e.stopPropagation();
-        selectNode(id);
-      });
+      row.addEventListener("click", (e) => { e.stopPropagation(); selectNode(id); });
 
       row.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData("text/plain", id);
@@ -722,8 +726,6 @@
 
         const draggedId = e.dataTransfer.getData("text/plain");
         if (!draggedId || draggedId === id) return;
-
-        // Prevent dropping parent into its descendant
         if (isDescendant(id, draggedId)) return;
 
         const pos = computeDropPos(row, e.clientY);
@@ -740,8 +742,6 @@
         e.preventDefault();
         const draggedId = e.dataTransfer.getData("text/plain");
         if (!draggedId || draggedId === id) return;
-
-        // Prevent dropping parent into its descendant
         if (isDescendant(id, draggedId)) return;
 
         const pos = row.dataset.drop || computeDropPos(row, e.clientY);
@@ -755,9 +755,8 @@
           reparentNode(draggedId, id);
           setStatus(`Parented ${dragged.name || dragged.type} → ${target.name || target.type}`, "");
         } else {
-          // reorder above/below target within target's parent
           reorderRelative(draggedId, id, pos);
-          setStatus("Reordered (Explorer order / ZIndex).", "");
+          setStatus("Reordered (Explorer order = ZIndex).", "");
         }
 
         clearDropMarks();
@@ -768,9 +767,10 @@
     }
 
     function addChildren(pid, depth) {
-      const ids = (ch.get(pid) || []).slice().sort((a, b) => ((map.get(a)?.zIndex ?? 1) - (map.get(b)?.zIndex ?? 1)));
+      const ids = (ch.get(pid) || []).slice()
+        .sort((a, b) => ((map.get(a)?.zIndex ?? 1) - (map.get(b)?.zIndex ?? 1)));
       for (const id of ids) {
-        explorer.appendChild(makeRow(id, depth));
+        dom.explorer.appendChild(makeRow(id, depth));
         addChildren(id, depth + 1);
       }
     }
@@ -780,101 +780,122 @@
 
   function renderProperties(map) {
     const n = state.selectedId ? map.get(state.selectedId) : null;
+    if (!dom.emptyProps || !dom.propsWrap) return;
+
     if (!n) {
-      emptyProps.hidden = false;
-      propsWrap.hidden = true;
+      dom.emptyProps.hidden = false;
+      dom.propsWrap.hidden = true;
       return;
     }
-    emptyProps.hidden = true;
-    propsWrap.hidden = false;
+    dom.emptyProps.hidden = true;
+    dom.propsWrap.hidden = false;
 
-    // core
-    propName.value = n.name || "";
-    propX.value = String(n.x);
-    propY.value = String(n.y);
-    propW.value = String(n.w);
-    propH.value = String(n.h);
-    propAnchor.value = `${n.anchorX},${n.anchorY}`;
-    propZIndex.value = String(n.zIndex ?? 1);
+    // Core
+    if (dom.propName) dom.propName.value = n.name || "";
+    if (dom.propX) dom.propX.value = String(n.x);
+    if (dom.propY) dom.propY.value = String(n.y);
+    if (dom.propW) dom.propW.value = String(n.w);
+    if (dom.propH) dom.propH.value = String(n.h);
+    if (dom.propAnchor) dom.propAnchor.value = `${n.anchorX},${n.anchorY}`;
+    if (dom.propZIndex) dom.propZIndex.value = String(n.zIndex ?? 1);
 
-    // parent options: ROOT + container nodes (not self, not descendants)
-    const opts = [{ id: "ROOT", label: "ScreenGui (root)" }];
-    for (const node of state.nodes) {
-      if (!isContainer(node)) continue;
-      if (node.id === n.id) continue;
-      if (isDescendant(node.id, n.id)) continue;
-      opts.push({ id: node.id, label: `${node.name || node.type} (${node.type})` });
+    // Parent dropdown: ROOT + containers excluding self & descendants
+    if (dom.propParent) {
+      const opts = [{ id: "ROOT", label: "ScreenGui (root)" }];
+      for (const node of state.nodes) {
+        if (!isContainer(node)) continue;
+        if (node.id === n.id) continue;
+        if (isDescendant(node.id, n.id)) continue;
+        opts.push({ id: node.id, label: `${node.name || node.type} (${node.type})` });
+      }
+      dom.propParent.innerHTML = opts.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
+      dom.propParent.value = n.parentId || "ROOT";
     }
-    propParent.innerHTML = opts.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
-    propParent.value = n.parentId || "ROOT";
 
-    // appearance
-    propBgColor.value = rgbToHex(n.bgColor.r, n.bgColor.g, n.bgColor.b);
-    propBgAlpha.value = String(n.bgAlpha);
-    propBgAlphaLabel.textContent = Number(n.bgAlpha).toFixed(2);
-    propBorder.value = n.border ? "true" : "false";
+    // Appearance
+    if (dom.propBgColor) dom.propBgColor.value = rgbToHex(n.bgColor.r, n.bgColor.g, n.bgColor.b);
+    if (dom.propBgAlpha) dom.propBgAlpha.value = String(n.bgAlpha);
+    if (dom.propBgAlphaLabel) dom.propBgAlphaLabel.textContent = Number(n.bgAlpha).toFixed(2);
+    if (dom.propBorder) dom.propBorder.value = n.border ? "true" : "false";
 
-    // text
+    // Text
     const tOn = isTextType(n);
-    propText.disabled = !tOn;
-    propTextColor.disabled = !tOn;
-    propTextScaled.disabled = !tOn;
-    propFont.disabled = !tOn;
+    if (dom.propText) { dom.propText.disabled = !tOn; dom.propText.value = tOn ? (n.text ?? "") : ""; }
+    if (dom.propTextColor) { dom.propTextColor.disabled = !tOn; dom.propTextColor.value = tOn ? rgbToHex(n.textColor.r, n.textColor.g, n.textColor.b) : "#ffffff"; }
+    if (dom.propTextScaled) { dom.propTextScaled.disabled = !tOn; dom.propTextScaled.value = tOn ? String(!!n.textScaled) : "true"; }
+    if (dom.propFont) { dom.propFont.disabled = !tOn; dom.propFont.value = tOn ? (n.font || "SourceSansBold") : "SourceSansBold"; }
 
-    propText.value = tOn ? (n.text ?? "") : "";
-    propTextColor.value = tOn ? rgbToHex(n.textColor.r, n.textColor.g, n.textColor.b) : "#ffffff";
-    propTextScaled.value = tOn ? String(!!n.textScaled) : "true";
-    propFont.value = tOn ? (n.font || "SourceSansBold") : "SourceSansBold";
-
-    // image
+    // Image
     const iOn = isImageType(n);
-    propImage.disabled = !iOn;
-    propImage.value = iOn ? (n.image || "") : "";
+    if (dom.propImage) { dom.propImage.disabled = !iOn; dom.propImage.value = iOn ? (n.image || "") : ""; }
 
-    // scrollingframe
+    // ScrollingFrame
     const sOn = n.type === "ScrollingFrame";
-    propCanvasW.disabled = !sOn;
-    propCanvasH.disabled = !sOn;
-    propScrollBar.disabled = !sOn;
+    if (dom.propCanvasW) { dom.propCanvasW.disabled = !sOn; dom.propCanvasW.value = sOn ? String(n.canvasSize?.w ?? 0) : ""; }
+    if (dom.propCanvasH) { dom.propCanvasH.disabled = !sOn; dom.propCanvasH.value = sOn ? String(n.canvasSize?.h ?? 0) : ""; }
+    if (dom.propScrollBar) { dom.propScrollBar.disabled = !sOn; dom.propScrollBar.value = sOn ? String(n.scrollBarThickness ?? 8) : ""; }
 
-    propCanvasW.value = sOn ? String(n.canvasSize?.w ?? 0) : "";
-    propCanvasH.value = sOn ? String(n.canvasSize?.h ?? 0) : "";
-    propScrollBar.value = sOn ? String(n.scrollBarThickness ?? 6) : "";
-
-    // ui objects
-    uiObjectsList.innerHTML = "";
-    const list = (n.uiObjects || []).slice();
-    if (list.length === 0) {
-      uiObjectsList.innerHTML = `<div class="uiobj-empty">No UI Objects attached.</div>`;
-    } else {
-      for (const obj of list) {
-        const row = document.createElement("div");
-        row.className = "uiobj-row";
-        row.innerHTML = `
-          <span class="uiobj-type">${obj.type}</span>
-          <button class="uiobj-remove" type="button" title="Remove">✕</button>
-        `;
-        row.querySelector(".uiobj-remove").addEventListener("click", () => removeUiObject(n.id, obj.id));
-        uiObjectsList.appendChild(row);
+    // UI Objects list
+    if (dom.uiObjectsList) {
+      const list = (n.uiObjects || []).slice();
+      dom.uiObjectsList.innerHTML = "";
+      if (list.length === 0) {
+        dom.uiObjectsList.innerHTML = `<div class="uiobj-empty">No UI Objects attached.</div>`;
+      } else {
+        for (const obj of list) {
+          const row = document.createElement("div");
+          row.className = "uiobj-row";
+          row.innerHTML = `
+            <span class="uiobj-type">${obj.type}</span>
+            <button class="uiobj-remove" type="button" title="Remove">✕</button>
+          `;
+          row.querySelector(".uiobj-remove").addEventListener("click", () => removeUiObject(n.id, obj.id));
+          dom.uiObjectsList.appendChild(row);
+        }
       }
     }
   }
 
-  // -------------------- Canvas drag/resize --------------------
+  function render() {
+    // Project UI
+    if (dom.guiName) dom.guiName.value = state.project.guiName;
+    if (dom.resetOnSpawn) dom.resetOnSpawn.value = String(state.project.resetOnSpawn);
+    if (dom.guiParent) dom.guiParent.value = state.project.parent;
+    if (dom.outputMode) dom.outputMode.value = state.project.outputMode;
+
+    // Zoom / safe area
+    if (dom.canvasOuter) dom.canvasOuter.style.setProperty("--zoom", String(state.zoom));
+    if (dom.zoom) dom.zoom.value = String(Math.round(state.zoom * 100));
+    if (dom.zoomLabel) dom.zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
+    if (dom.safeArea) dom.safeArea.hidden = !state.showSafeArea;
+
+    const map = idMap();
+    const ch = childrenMap();
+
+    renderCanvas(map, ch);
+    renderExplorer(map, ch);
+    renderProperties(map);
+
+    const hasExport = (dom.exportBox?.value || "").trim().length > 0;
+    if (dom.btnCopy) dom.btnCopy.disabled = !hasExport;
+    if (dom.btnDownload) dom.btnDownload.disabled = !hasExport;
+  }
+
+  // -------------------- Canvas interaction --------------------
   const dragState = {
     active: false,
-    mode: null,      // "move" | "resize"
+    mode: null,     // "move" | "resize"
     id: null,
     handle: null,
     parentId: "ROOT",
-    startMouse: { x: 0, y: 0 },  // in parent-local coords
+    startMouse: { x: 0, y: 0 },
     start: { x: 0, y: 0, w: 0, h: 0 },
+    pointerId: null,
   };
 
   function canvasEventToWorld(e) {
-    const rect = canvas.getBoundingClientRect();
-    const z = state.zoom;
-    return { x: (e.clientX - rect.left) / z, y: (e.clientY - rect.top) / z };
+    const rect = dom.canvas.getBoundingClientRect();
+    return { x: (e.clientX - rect.left) / state.zoom, y: (e.clientY - rect.top) / state.zoom };
   }
 
   function worldToParentLocal(world, parentId, map) {
@@ -882,54 +903,20 @@
     return { x: world.x - pTL.x, y: world.y - pTL.y };
   }
 
-  function findDropParent(world, map) {
-    // hit-test DOM at pointer and find container
-    const rect = canvas.getBoundingClientRect();
-    const z = state.zoom;
-    const cx = rect.left + world.x * z;
-    const cy = rect.top + world.y * z;
+  function findDropParent(world) {
+    // hit test on scaled canvas
+    const rect = dom.canvas.getBoundingClientRect();
+    const cx = rect.left + world.x * state.zoom;
+    const cy = rect.top + world.y * state.zoom;
 
     const el = document.elementFromPoint(cx, cy);
     if (!el) return "ROOT";
     const containerEl = el.closest(".node.container");
     if (!containerEl) return "ROOT";
     const id = containerEl.dataset.id;
-    const n = map.get(id);
+    const n = getNode(id);
     if (!n || !isContainer(n)) return "ROOT";
     return id;
-  }
-
-  function onPointerDown(e) {
-    if (e.button === 2) return; // right click handled by context menu
-    const nodeEl = e.target.closest(".node");
-    if (!nodeEl) {
-      clearSelection();
-      return;
-    }
-
-    const id = nodeEl.dataset.id;
-    selectNode(id);
-
-    const map = byId();
-    const n = map.get(id);
-    if (!n) return;
-
-    const handleEl = e.target.closest(".handle");
-    const handle = handleEl ? handleEl.dataset.handle : null;
-
-    dragState.active = true;
-    dragState.id = id;
-    dragState.mode = handle ? "resize" : "move";
-    dragState.handle = handle;
-    dragState.parentId = n.parentId || "ROOT";
-    dragState.start = { x: n.x, y: n.y, w: n.w, h: n.h };
-
-    const world = canvasEventToWorld(e);
-    const local = worldToParentLocal(world, dragState.parentId, map);
-    dragState.startMouse = local;
-
-    canvas.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
   }
 
   function applyMove(n, dx, dy, map) {
@@ -966,34 +953,64 @@
     clampInParent(n, map);
   }
 
+  function onPointerDown(e) {
+    if (e.button === 2) return; // right click handled by context menu
+    const nodeEl = e.target.closest(".node");
+    if (!nodeEl) { clearSelection(); return; }
+
+    const id = nodeEl.dataset.id;
+    selectNode(id);
+
+    const map = idMap();
+    const n = map.get(id);
+    if (!n) return;
+
+    const handleEl = e.target.closest(".handle");
+    const handle = handleEl ? handleEl.dataset.handle : null;
+
+    dragState.active = true;
+    dragState.id = id;
+    dragState.mode = handle ? "resize" : "move";
+    dragState.handle = handle;
+    dragState.parentId = n.parentId || "ROOT";
+    dragState.start = { x: n.x, y: n.y, w: n.w, h: n.h };
+    dragState.pointerId = e.pointerId;
+
+    const world = canvasEventToWorld(e);
+    const local = worldToParentLocal(world, dragState.parentId, map);
+    dragState.startMouse = local;
+
+    dom.canvas.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  }
+
   function onPointerMove(e) {
     if (!dragState.active) return;
-    const map = byId();
+    const map = idMap();
     const n = map.get(dragState.id);
     if (!n) return;
 
     const world = canvasEventToWorld(e);
     const local = worldToParentLocal(world, dragState.parentId, map);
-
     const dx = local.x - dragState.startMouse.x;
     const dy = local.y - dragState.startMouse.y;
 
     if (dragState.mode === "move") applyMove(n, dx, dy, map);
     else applyResize(n, dx, dy, dragState.handle, map);
 
-    setStatus(`Editing: ${n.type} (${n.name || n.type})`, `x:${n.x} y:${n.y} w:${n.w} h:${n.h} z:${n.zIndex ?? 1}`);
+    setStatus(`Editing: ${n.type}`, `x:${n.x} y:${n.y} w:${n.w} h:${n.h}`);
     render();
   }
 
   function onPointerUp(e) {
     if (!dragState.active) return;
 
-    const map = byId();
+    const map = idMap();
     const n = map.get(dragState.id);
 
     if (n && dragState.mode === "move") {
       const world = canvasEventToWorld(e);
-      const dropParent = findDropParent(world, map);
+      const dropParent = findDropParent(world);
 
       if (dropParent !== (n.parentId || "ROOT") && dropParent !== n.id && !isDescendant(dropParent, n.id)) {
         reparentNode(n.id, dropParent);
@@ -1004,20 +1021,26 @@
     dragState.mode = null;
     dragState.id = null;
     dragState.handle = null;
+    dragState.pointerId = null;
 
     render();
   }
 
-  // -------------------- Context menu (right-click) --------------------
-  function hideCtx() { ctxMenu.hidden = true; }
+  // -------------------- Context menu --------------------
+  function hideCtx() {
+    if (dom.ctxMenu) dom.ctxMenu.hidden = true;
+  }
   function showCtx(x, y) {
-    ctxMenu.hidden = false;
-    ctxMenu.style.left = `${x}px`;
-    ctxMenu.style.top = `${y}px`;
+    if (!dom.ctxMenu) return;
+    dom.ctxMenu.hidden = false;
+    dom.ctxMenu.style.left = `${x}px`;
+    dom.ctxMenu.style.top = `${y}px`;
   }
 
   function bindContextMenu() {
-    canvas.addEventListener("contextmenu", (e) => {
+    if (!dom.canvas || !dom.ctxMenu) return;
+
+    dom.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       const nodeEl = e.target.closest(".node");
       if (!nodeEl) { hideCtx(); return; }
@@ -1029,15 +1052,15 @@
     window.addEventListener("resize", () => hideCtx());
     window.addEventListener("scroll", () => hideCtx(), true);
 
-    ctxDelete.addEventListener("click", () => { deleteSelected(); hideCtx(); });
-    ctxDuplicate.addEventListener("click", () => { duplicateSelected(); hideCtx(); });
-    ctxMoveUp.addEventListener("click", () => { moveUpSelected(); hideCtx(); });
-    ctxMoveDown.addEventListener("click", () => { moveDownSelected(); hideCtx(); });
+    if (dom.ctxDelete) dom.ctxDelete.addEventListener("click", () => { deleteSelected(); hideCtx(); });
+    if (dom.ctxDuplicate) dom.ctxDuplicate.addEventListener("click", () => { duplicateSelected(); hideCtx(); });
+    if (dom.ctxMoveUp) dom.ctxMoveUp.addEventListener("click", () => { moveUpSelected(); hideCtx(); });
+    if (dom.ctxMoveDown) dom.ctxMoveDown.addEventListener("click", () => { moveDownSelected(); hideCtx(); });
   }
 
-  // -------------------- Props bindings --------------------
+  // -------------------- Bindings (props/project/toolbox) --------------------
   function updateSelected(mutator) {
-    const map = byId();
+    const map = idMap();
     const n = map.get(state.selectedId);
     if (!n) return;
     mutator(n, map);
@@ -1046,11 +1069,11 @@
   }
 
   function bindProps() {
-    propName.addEventListener("input", () => updateSelected((n) => (n.name = propName.value.trim() || n.type)));
+    if (dom.propName) dom.propName.addEventListener("input", () => updateSelected((n) => (n.name = dom.propName.value.trim() || n.type)));
 
-    propParent.addEventListener("change", () => {
+    if (dom.propParent) dom.propParent.addEventListener("change", () => {
       if (!state.selectedId) return;
-      const pid = propParent.value;
+      const pid = dom.propParent.value;
       if (pid === state.selectedId) return;
       if (isDescendant(pid, state.selectedId)) return;
       reparentNode(state.selectedId, pid);
@@ -1058,176 +1081,128 @@
     });
 
     const applyXYWH = () => updateSelected((n) => {
-      n.x = Number(propX.value);
-      n.y = Number(propY.value);
-      n.w = Number(propW.value);
-      n.h = Number(propH.value);
+      if (dom.propX) n.x = Number(dom.propX.value);
+      if (dom.propY) n.y = Number(dom.propY.value);
+      if (dom.propW) n.w = Number(dom.propW.value);
+      if (dom.propH) n.h = Number(dom.propH.value);
     });
-    propX.addEventListener("input", applyXYWH);
-    propY.addEventListener("input", applyXYWH);
-    propW.addEventListener("input", applyXYWH);
-    propH.addEventListener("input", applyXYWH);
+    if (dom.propX) dom.propX.addEventListener("input", applyXYWH);
+    if (dom.propY) dom.propY.addEventListener("input", applyXYWH);
+    if (dom.propW) dom.propW.addEventListener("input", applyXYWH);
+    if (dom.propH) dom.propH.addEventListener("input", applyXYWH);
 
-    propAnchor.addEventListener("change", () => {
-      const [ax, ay] = propAnchor.value.split(",").map(Number);
+    if (dom.propAnchor) dom.propAnchor.addEventListener("change", () => {
+      const [ax, ay] = dom.propAnchor.value.split(",").map(Number);
       updateSelected((n) => {
         n.anchorX = isFinite(ax) ? ax : 0;
         n.anchorY = isFinite(ay) ? ay : 0;
       });
     });
 
-    propZIndex.addEventListener("input", () => updateSelected((n) => {
-      n.zIndex = round(Number(propZIndex.value) || 1);
-      normalizeZIndices(n.parentId || "ROOT");
+    if (dom.propZIndex) dom.propZIndex.addEventListener("input", () => updateSelected((n) => {
+      n.zIndex = round(dom.propZIndex.value || 1);
+      normalizeZ(n.parentId || "ROOT");
     }));
 
-    propBgColor.addEventListener("input", () => {
-      const { r, g, b } = hexToRgb(propBgColor.value);
+    if (dom.propBgColor) dom.propBgColor.addEventListener("input", () => {
+      const { r, g, b } = hexToRgb(dom.propBgColor.value);
       updateSelected((n) => (n.bgColor = { r, g, b }));
     });
 
-    propBgAlpha.addEventListener("input", () => {
-      const a = clamp(Number(propBgAlpha.value), 0, 1);
-      propBgAlphaLabel.textContent = a.toFixed(2);
+    if (dom.propBgAlpha) dom.propBgAlpha.addEventListener("input", () => {
+      const a = clamp(Number(dom.propBgAlpha.value), 0, 1);
+      if (dom.propBgAlphaLabel) dom.propBgAlphaLabel.textContent = a.toFixed(2);
       updateSelected((n) => (n.bgAlpha = a));
     });
 
-    propBorder.addEventListener("change", () => updateSelected((n) => (n.border = propBorder.value === "true")));
+    if (dom.propBorder) dom.propBorder.addEventListener("change", () => updateSelected((n) => (n.border = dom.propBorder.value === "true")));
 
-    propText.addEventListener("input", () => updateSelected((n) => { if (isTextType(n)) n.text = propText.value; }));
-    propTextColor.addEventListener("input", () => {
-      const { r, g, b } = hexToRgb(propTextColor.value);
+    if (dom.propText) dom.propText.addEventListener("input", () => updateSelected((n) => { if (isTextType(n)) n.text = dom.propText.value; }));
+    if (dom.propTextColor) dom.propTextColor.addEventListener("input", () => {
+      const { r, g, b } = hexToRgb(dom.propTextColor.value);
       updateSelected((n) => { if (isTextType(n)) n.textColor = { r, g, b }; });
     });
-    propTextScaled.addEventListener("change", () => updateSelected((n) => { if (isTextType(n)) n.textScaled = propTextScaled.value === "true"; }));
-    propFont.addEventListener("change", () => updateSelected((n) => { if (isTextType(n)) n.font = propFont.value; }));
+    if (dom.propTextScaled) dom.propTextScaled.addEventListener("change", () => updateSelected((n) => { if (isTextType(n)) n.textScaled = dom.propTextScaled.value === "true"; }));
+    if (dom.propFont) dom.propFont.addEventListener("change", () => updateSelected((n) => { if (isTextType(n)) n.font = dom.propFont.value; }));
 
-    propImage.addEventListener("input", () => updateSelected((n) => { if (isImageType(n)) n.image = propImage.value; }));
+    if (dom.propImage) dom.propImage.addEventListener("input", () => updateSelected((n) => { if (isImageType(n)) n.image = dom.propImage.value; }));
 
     const applyScroll = () => updateSelected((n) => {
       if (n.type !== "ScrollingFrame") return;
       n.canvasSize = n.canvasSize || { w: 0, h: 0 };
-      n.canvasSize.w = round(Number(propCanvasW.value) || 0);
-      n.canvasSize.h = round(Number(propCanvasH.value) || 0);
-      n.scrollBarThickness = round(Number(propScrollBar.value) || 0);
+      if (dom.propCanvasW) n.canvasSize.w = round(dom.propCanvasW.value || 0);
+      if (dom.propCanvasH) n.canvasSize.h = round(dom.propCanvasH.value || 0);
+      if (dom.propScrollBar) n.scrollBarThickness = round(dom.propScrollBar.value || 0);
     });
-    propCanvasW.addEventListener("input", applyScroll);
-    propCanvasH.addEventListener("input", applyScroll);
-    propScrollBar.addEventListener("input", applyScroll);
+    if (dom.propCanvasW) dom.propCanvasW.addEventListener("input", applyScroll);
+    if (dom.propCanvasH) dom.propCanvasH.addEventListener("input", applyScroll);
+    if (dom.propScrollBar) dom.propScrollBar.addEventListener("input", applyScroll);
   }
 
-  // -------------------- Project controls --------------------
   function bindProjectControls() {
-    guiNameEl.addEventListener("input", () => { state.project.guiName = guiNameEl.value.trim() || "ScreenGui"; render(); });
-    resetOnSpawnEl.addEventListener("change", () => { state.project.resetOnSpawn = resetOnSpawnEl.value === "true"; render(); });
-    guiParentEl.addEventListener("change", () => { state.project.parent = guiParentEl.value; render(); });
-    outputModeEl.addEventListener("change", () => { state.project.outputMode = outputModeEl.value; render(); });
+    if (dom.guiName) dom.guiName.addEventListener("input", () => { state.project.guiName = dom.guiName.value.trim() || "ScreenGui"; render(); });
+    if (dom.resetOnSpawn) dom.resetOnSpawn.addEventListener("change", () => { state.project.resetOnSpawn = dom.resetOnSpawn.value === "true"; render(); });
+    if (dom.guiParent) dom.guiParent.addEventListener("change", () => { state.project.parent = dom.guiParent.value; render(); });
+    if (dom.outputMode) dom.outputMode.addEventListener("change", () => { state.project.outputMode = dom.outputMode.value; render(); });
 
-    chkSafeArea.addEventListener("change", () => { state.showSafeArea = chkSafeArea.checked; render(); });
-    zoom.addEventListener("input", () => { state.zoom = clamp(Number(zoom.value) / 100, 0.5, 2.0); render(); });
+    if (dom.chkSafeArea) dom.chkSafeArea.addEventListener("change", () => { state.showSafeArea = dom.chkSafeArea.checked; render(); });
+    if (dom.zoom) dom.zoom.addEventListener("input", () => { state.zoom = clamp(Number(dom.zoom.value) / 100, 0.5, 2.0); render(); });
 
-    tabInstances.addEventListener("click", () => {
-      tabInstances.classList.add("active");
-      tabUiObjects.classList.remove("active");
-      toolboxInstances.hidden = false;
-      toolboxUiObjects.hidden = true;
+    if (dom.tabInstances && dom.tabUiObjects && dom.toolboxInstances && dom.toolboxUiObjects) {
+      dom.tabInstances.addEventListener("click", () => {
+        dom.tabInstances.classList.add("active");
+        dom.tabUiObjects.classList.remove("active");
+        dom.toolboxInstances.hidden = false;
+        dom.toolboxUiObjects.hidden = true;
+      });
+      dom.tabUiObjects.addEventListener("click", () => {
+        dom.tabUiObjects.classList.add("active");
+        dom.tabInstances.classList.remove("active");
+        dom.toolboxInstances.hidden = true;
+        dom.toolboxUiObjects.hidden = false;
+      });
+    }
+  }
+
+  function bindToolbox() {
+    $$(".tool[data-create]").forEach((btn) => {
+      btn.addEventListener("click", () => createNode(btn.dataset.create));
     });
-    tabUiObjects.addEventListener("click", () => {
-      tabUiObjects.classList.add("active");
-      tabInstances.classList.remove("active");
-      toolboxInstances.hidden = true;
-      toolboxUiObjects.hidden = false;
+
+    $$(".tool[data-add-ui]").forEach((btn) => {
+      btn.addEventListener("click", () => addUiObject(btn.dataset.addUi));
     });
   }
 
-  // -------------------- Save / Load / New --------------------
+  // -------------------- Save/Load --------------------
   function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    setStatus("Saved to browser storage.", "");
+    setStatus("Saved.", "");
   }
   function loadFromStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) { setStatus("Nothing saved yet.", ""); return; }
     try {
       const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.nodes)) throw new Error("bad");
+      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.nodes)) throw new Error("Invalid save");
       state.project = parsed.project || state.project;
       state.nodes = parsed.nodes || [];
       state.selectedId = parsed.selectedId || null;
       state.zoom = parsed.zoom || 1;
       state.showSafeArea = !!parsed.showSafeArea;
-      chkSafeArea.checked = state.showSafeArea;
-      setStatus("Loaded from browser storage.", "");
+      if (dom.chkSafeArea) dom.chkSafeArea.checked = state.showSafeArea;
+      setStatus("Loaded.", "");
       render();
-    } catch (e) {
-      console.error(e);
-      setStatus("Failed to load saved data.", "");
+    } catch {
+      setStatus("Load failed (corrupt save).", "");
     }
-  }
-  function newProject() {
-    const d = defaultProject();
-    state.project = d.project;
-    state.nodes = d.nodes;
-    state.selectedId = d.selectedId;
-    state.zoom = d.zoom;
-    state.showSafeArea = d.showSafeArea;
-    chkSafeArea.checked = false;
-    exportBox.value = "";
-    setStatus("New project created.", "");
-    render();
-    exportLua();
-  }
-
-  // -------------------- Duplicate / Delete --------------------
-  function duplicateSelected() {
-    if (!state.selectedId) return;
-    const map = byId();
-    const n = map.get(state.selectedId);
-    if (!n) return;
-
-    const copy = JSON.parse(JSON.stringify(n));
-    copy.id = uid();
-    copy.name = (n.name || n.type) + "Copy";
-    copy.zIndex = nextZIndex(copy.parentId || "ROOT");
-    copy.x += 12; copy.y += 12;
-    clampInParent(copy, map);
-
-    state.nodes.push(copy);
-    selectNode(copy.id);
-    setStatus("Duplicated element.", "");
-  }
-
-  function deleteSelected() {
-    const id = state.selectedId;
-    if (!id) return;
-
-    const toRemove = new Set([id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const n of state.nodes) {
-        if (toRemove.has(n.parentId) && !toRemove.has(n.id)) {
-          toRemove.add(n.id);
-          changed = true;
-        }
-      }
-    }
-    const removedNode = getNode(id);
-    const oldParent = removedNode ? (removedNode.parentId || "ROOT") : "ROOT";
-
-    state.nodes = state.nodes.filter(n => !toRemove.has(n.id));
-    state.selectedId = null;
-
-    normalizeZIndices(oldParent);
-    setStatus("Deleted element.", "");
-    render();
   }
 
   // -------------------- Export Lua --------------------
   function luaBool(b) { return b ? "true" : "false"; }
   function formatColor3(rgb) { return `Color3.fromRGB(${rgb.r}, ${rgb.g}, ${rgb.b})`; }
 
-  function depth(id, map) {
+  function depthOf(id, map) {
     let d = 0;
     let cur = map.get(id);
     while (cur && (cur.parentId || "ROOT") !== "ROOT") {
@@ -1238,21 +1213,23 @@
   }
 
   function exportLua() {
+    if (!dom.exportBox) return;
+
     const useVars = state.project.outputMode === "variables";
     const guiName = state.project.guiName?.trim() || "ScreenGui";
     const resetOnSpawn = !!state.project.resetOnSpawn;
     const parent = state.project.parent;
 
-    const map = byId();
+    const map = idMap();
+    const ch = childrenMap();
+
     const lines = [];
+    const emit = (s = "") => lines.push(s);
+
     const taken = new Set(["game", "workspace", "script", "player", "screenGui"]);
     const varMap = new Map();
-    const created = new Set(["ROOT"]);
 
-    const emit = (s = "") => lines.push(s);
-    const indent = (n) => "  ".repeat(n);
-
-    function varNameFor(n) {
+    const varNameFor = (n) => {
       if (varMap.has(n.id)) return varMap.get(n.id);
       let base = safeLuaIdent((n.name || n.type).replace(/\s+/g, ""));
       base = base.charAt(0).toLowerCase() + base.slice(1);
@@ -1261,9 +1238,11 @@
       taken.add(v);
       varMap.set(n.id, v);
       return v;
-    }
+    };
 
-    // header
+    const pre = (lvl) => (useVars ? "" : "  ".repeat(lvl));
+
+    // Header
     if (useVars) {
       emit(`local screenGui = Instance.new("ScreenGui")`);
       emit(`screenGui.Name = "${escapeLuaString(guiName)}"`);
@@ -1277,195 +1256,183 @@
       emit("");
     } else {
       emit(`do`);
-      emit(`${indent(1)}local screenGui = Instance.new("ScreenGui")`);
-      emit(`${indent(1)}screenGui.Name = "${escapeLuaString(guiName)}"`);
-      emit(`${indent(1)}screenGui.ResetOnSpawn = ${luaBool(resetOnSpawn)}`);
+      emit(`${pre(1)}local screenGui = Instance.new("ScreenGui")`);
+      emit(`${pre(1)}screenGui.Name = "${escapeLuaString(guiName)}"`);
+      emit(`${pre(1)}screenGui.ResetOnSpawn = ${luaBool(resetOnSpawn)}`);
       if (parent === "PlayerGui") {
-        emit(`${indent(1)}local player = game.Players.LocalPlayer`);
-        emit(`${indent(1)}screenGui.Parent = player:WaitForChild("PlayerGui")`);
+        emit(`${pre(1)}local player = game.Players.LocalPlayer`);
+        emit(`${pre(1)}screenGui.Parent = player:WaitForChild("PlayerGui")`);
       } else {
-        emit(`${indent(1)}screenGui.Parent = game:GetService("CoreGui")`);
+        emit(`${pre(1)}screenGui.Parent = game:GetService("CoreGui")`);
       }
       emit("");
     }
 
-    function ensure(id) {
+    const created = new Set(["ROOT"]);
+
+    const emitNode = (id) => {
       if (created.has(id)) return;
       const n = map.get(id);
       if (!n) return;
 
       const pid = n.parentId || "ROOT";
-      if (pid !== "ROOT") ensure(pid);
+      if (pid !== "ROOT") emitNode(pid);
 
-      const pre = useVars ? "" : indent(1);
       const v = useVars ? varNameFor(n) : safeLuaIdent(n.type.toLowerCase());
+      const pfx = useVars ? "" : pre(1);
 
-      emit(`${pre}local ${v} = Instance.new("${n.type}")`);
-      emit(`${pre}${v}.Name = "${escapeLuaString(n.name || n.type)}"`);
-
-      emit(`${pre}${v}.Size = UDim2.new(0, ${round(n.w)}, 0, ${round(n.h)})`);
+      emit(`${pfx}local ${v} = Instance.new("${n.type}")`);
+      emit(`${pfx}${v}.Name = "${escapeLuaString(n.name || n.type)}"`);
+      emit(`${pfx}${v}.Size = UDim2.new(0, ${round(n.w)}, 0, ${round(n.h)})`);
 
       const posX = round(n.x - n.anchorX * n.w);
       const posY = round(n.y - n.anchorY * n.h);
-      emit(`${pre}${v}.Position = UDim2.new(0, ${posX}, 0, ${posY})`);
-      emit(`${pre}${v}.AnchorPoint = Vector2.new(${n.anchorX}, ${n.anchorY})`);
-      emit(`${pre}${v}.ZIndex = ${round(n.zIndex ?? 1)}`);
+      emit(`${pfx}${v}.Position = UDim2.new(0, ${posX}, 0, ${posY})`);
+      emit(`${pfx}${v}.AnchorPoint = Vector2.new(${n.anchorX}, ${n.anchorY})`);
+      emit(`${pfx}${v}.ZIndex = ${round(n.zIndex ?? 1)}`);
 
-      emit(`${pre}${v}.BackgroundColor3 = ${formatColor3(n.bgColor)}`);
-      emit(`${pre}${v}.BackgroundTransparency = ${clamp(1 - n.bgAlpha, 0, 1).toFixed(2)}`);
-      emit(`${pre}${v}.BorderSizePixel = ${n.border ? 1 : 0}`);
+      emit(`${pfx}${v}.BackgroundColor3 = ${formatColor3(n.bgColor)}`);
+      emit(`${pfx}${v}.BackgroundTransparency = ${(clamp(1 - n.bgAlpha, 0, 1)).toFixed(2)}`);
+      emit(`${pfx}${v}.BorderSizePixel = ${n.border ? 1 : 0}`);
 
       if (isTextType(n)) {
-        emit(`${pre}${v}.TextColor3 = ${formatColor3(n.textColor)}`);
-        emit(`${pre}${v}.Text = "${escapeLuaString(n.text ?? "")}"`);
-        emit(`${pre}${v}.TextScaled = ${luaBool(!!n.textScaled)}`);
-        emit(`${pre}${v}.Font = Enum.Font.${n.font || "SourceSansBold"}`);
+        emit(`${pfx}${v}.TextColor3 = ${formatColor3(n.textColor)}`);
+        emit(`${pfx}${v}.Text = "${escapeLuaString(n.text ?? "")}"`);
+        emit(`${pfx}${v}.TextScaled = ${luaBool(!!n.textScaled)}`);
+        emit(`${pfx}${v}.Font = Enum.Font.${n.font || "SourceSansBold"}`);
       }
 
       if (isImageType(n)) {
-        if ((n.image || "").trim()) emit(`${pre}${v}.Image = "${escapeLuaString((n.image || "").trim())}"`);
+        const img = (n.image || "").trim();
+        if (img) emit(`${pfx}${v}.Image = "${escapeLuaString(img)}"`);
       }
 
       if (n.type === "ScrollingFrame") {
         const cw = round(n.canvasSize?.w ?? 0);
         const chh = round(n.canvasSize?.h ?? 0);
-        emit(`${pre}${v}.CanvasSize = UDim2.new(0, ${cw}, 0, ${chh})`);
-        emit(`${pre}${v}.ScrollBarThickness = ${round(n.scrollBarThickness ?? 6)}`);
+        emit(`${pfx}${v}.CanvasSize = UDim2.new(0, ${cw}, 0, ${chh})`);
+        emit(`${pfx}${v}.ScrollBarThickness = ${round(n.scrollBarThickness ?? 8)}`);
       }
 
-      // parent assignment
-      if ((n.parentId || "ROOT") === "ROOT") {
-        emit(`${pre}${v}.Parent = screenGui`);
-      } else {
-        if (useVars) emit(`${pre}${v}.Parent = ${varMap.get(n.parentId) || "screenGui"}`);
-        else emit(`${pre}${v}.Parent = ${safeLuaIdent((map.get(n.parentId)?.type || "frame").toLowerCase())}`);
-      }
-
-      // UI Objects (basic exported props)
-      const uiObjs = n.uiObjects || [];
-      for (const obj of uiObjs) {
+      // UI objects (basic defaults only)
+      for (const obj of (n.uiObjects || [])) {
         const uiVar = useVars ? `${v}_${safeLuaIdent(obj.type).toLowerCase()}` : `ui_${safeLuaIdent(obj.type).toLowerCase()}`;
-        emit(`${pre}local ${uiVar} = Instance.new("${obj.type}")`);
+        emit(`${pfx}local ${uiVar} = Instance.new("${obj.type}")`);
 
         if (obj.type === "UICorner") {
           const r = round(obj.props?.cornerRadius ?? 8);
-          emit(`${pre}${uiVar}.CornerRadius = UDim.new(0, ${r})`);
+          emit(`${pfx}${uiVar}.CornerRadius = UDim.new(0, ${r})`);
         }
         if (obj.type === "UIStroke") {
           const t = round(obj.props?.thickness ?? 2);
           const c = obj.props?.color || { r: 255, g: 255, b: 255 };
           const tr = clamp(Number(obj.props?.transparency ?? 0.2), 0, 1);
-          emit(`${pre}${uiVar}.Thickness = ${t}`);
-          emit(`${pre}${uiVar}.Color = ${formatColor3(c)}`);
-          emit(`${pre}${uiVar}.Transparency = ${tr.toFixed(2)}`);
+          emit(`${pfx}${uiVar}.Thickness = ${t}`);
+          emit(`${pfx}${uiVar}.Color = ${formatColor3(c)}`);
+          emit(`${pfx}${uiVar}.Transparency = ${tr.toFixed(2)}`);
         }
         if (obj.type === "UIAspectRatioConstraint") {
           const ar = Number(obj.props?.aspectRatio ?? 1.0);
-          emit(`${pre}${uiVar}.AspectRatio = ${ar}`);
+          emit(`${pfx}${uiVar}.AspectRatio = ${ar}`);
         }
         if (obj.type === "UITextSizeConstraint") {
           const minT = round(obj.props?.minTextSize ?? 8);
           const maxT = round(obj.props?.maxTextSize ?? 48);
-          emit(`${pre}${uiVar}.MinTextSize = ${minT}`);
-          emit(`${pre}${uiVar}.MaxTextSize = ${maxT}`);
+          emit(`${pfx}${uiVar}.MinTextSize = ${minT}`);
+          emit(`${pfx}${uiVar}.MaxTextSize = ${maxT}`);
         }
         if (obj.type === "UISizeConstraint") {
           const p = obj.props || {};
-          emit(`${pre}${uiVar}.MinSize = Vector2.new(${round(p.minW ?? 0)}, ${round(p.minH ?? 0)})`);
-          emit(`${pre}${uiVar}.MaxSize = Vector2.new(${round(p.maxW ?? 0)}, ${round(p.maxH ?? 0)})`);
+          emit(`${pfx}${uiVar}.MinSize = Vector2.new(${round(p.minW ?? 0)}, ${round(p.minH ?? 0)})`);
+          emit(`${pfx}${uiVar}.MaxSize = Vector2.new(${round(p.maxW ?? 0)}, ${round(p.maxH ?? 0)})`);
         }
         if (obj.type === "UIScale") {
           const sc = Number(obj.props?.scale ?? 1.0);
-          emit(`${pre}${uiVar}.Scale = ${sc}`);
+          emit(`${pfx}${uiVar}.Scale = ${sc}`);
         }
         if (obj.type === "UIPadding") {
           const p = obj.props || {};
-          emit(`${pre}${uiVar}.PaddingLeft = UDim.new(0, ${round(p.left ?? 0)})`);
-          emit(`${pre}${uiVar}.PaddingRight = UDim.new(0, ${round(p.right ?? 0)})`);
-          emit(`${pre}${uiVar}.PaddingTop = UDim.new(0, ${round(p.top ?? 0)})`);
-          emit(`${pre}${uiVar}.PaddingBottom = UDim.new(0, ${round(p.bottom ?? 0)})`);
+          emit(`${pfx}${uiVar}.PaddingLeft = UDim.new(0, ${round(p.left ?? 0)})`);
+          emit(`${pfx}${uiVar}.PaddingRight = UDim.new(0, ${round(p.right ?? 0)})`);
+          emit(`${pfx}${uiVar}.PaddingTop = UDim.new(0, ${round(p.top ?? 0)})`);
+          emit(`${pfx}${uiVar}.PaddingBottom = UDim.new(0, ${round(p.bottom ?? 0)})`);
         }
 
-        emit(`${pre}${uiVar}.Parent = ${v}`);
+        emit(`${pfx}${uiVar}.Parent = ${v}`);
       }
+
+      // Parent assignment at end (after properties)
+      if (pid === "ROOT") emit(`${pfx}${v}.Parent = screenGui`);
+      else emit(`${pfx}${v}.Parent = ${useVars ? varMap.get(pid) : safeLuaIdent(map.get(pid)?.type?.toLowerCase() || "frame")}`);
 
       emit("");
       created.add(id);
-    }
+    };
 
-    const sorted = state.nodes
-      .slice()
-      .sort((a, b) => {
-        if ((a.parentId || "ROOT") === (b.parentId || "ROOT")) return (a.zIndex ?? 1) - (b.zIndex ?? 1);
-        return depth(a.id, map) - depth(b.id, map);
-      })
-      .map((n) => n.id);
+    // Emit nodes in depth order, then sibling zIndex order
+    const ids = state.nodes.slice().sort((a, b) => {
+      const da = depthOf(a.id, map);
+      const db = depthOf(b.id, map);
+      if (da !== db) return da - db;
+      if ((a.parentId || "ROOT") !== (b.parentId || "ROOT")) return 0;
+      return (a.zIndex ?? 1) - (b.zIndex ?? 1);
+    }).map(n => n.id);
 
-    for (const id of sorted) ensure(id);
-    if (!useVars) emit(`end`);
+    for (const id of ids) emitNode(id);
 
-    exportBox.value = lines.join("\n").trimEnd();
-    btnCopy.disabled = !(exportBox.value || "").trim();
-    btnDownload.disabled = btnCopy.disabled;
+    if (!useVars) emit("end");
 
-    setStatus("Exported Lua script.", "");
+    dom.exportBox.value = lines.join("\n").trimEnd();
+    render();
+    setStatus("Exported Lua.", "");
   }
 
-  // -------------------- Copy / Download --------------------
   async function copyExport() {
-    const text = exportBox.value || "";
-    if (!text.trim()) return;
+    const text = (dom.exportBox?.value || "").trim();
+    if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      setStatus("Copied to clipboard.", "");
+      setStatus("Copied.", "");
     } catch {
-      exportBox.focus();
-      exportBox.select();
+      dom.exportBox.focus();
+      dom.exportBox.select();
       document.execCommand("copy");
       setStatus("Copied (fallback).", "");
     }
   }
+
   function downloadExport() {
-    const text = exportBox.value || "";
-    if (!text.trim()) return;
+    const text = (dom.exportBox?.value || "").trim();
+    if (!text) return;
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${(state.project.guiName || "ui").replace(/[^\w\-]+/g, "_")}.lua`;
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(a.href);
-      a.remove();
-    }, 0);
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   }
 
-  // -------------------- Toolbox binding --------------------
-  function bindToolbox() {
-    $$(".tool[data-create]").forEach((btn) => {
-      btn.addEventListener("click", () => createNode(btn.dataset.create));
-    });
+  // -------------------- Buttons / keyboard --------------------
+  function bindButtons() {
+    if (dom.btnNew) dom.btnNew.addEventListener("click", newProject);
+    if (dom.btnSave) dom.btnSave.addEventListener("click", saveToStorage);
+    if (dom.btnLoad) dom.btnLoad.addEventListener("click", loadFromStorage);
+    if (dom.btnExport) dom.btnExport.addEventListener("click", exportLua);
 
-    $$(".tool[data-add-ui]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const t = btn.dataset.addUi;
-        // aliases you used in HTML
-        if (t === "UIGridStyleLayout") return addUiObject("UIGridLayout");
-        if (t === "UIListStyleLayout") return addUiObject("UIListLayout");
-        if (t === "UIConstraint") return setStatus("UIConstraint is a base class in Roblox and not instantiable. Pick a concrete UI* object.", "");
-        addUiObject(t);
-      });
-    });
+    if (dom.btnCopy) dom.btnCopy.addEventListener("click", copyExport);
+    if (dom.btnDownload) dom.btnDownload.addEventListener("click", downloadExport);
+
+    if (dom.btnDuplicate) dom.btnDuplicate.addEventListener("click", duplicateSelected);
+    if (dom.btnMoveUp) dom.btnMoveUp.addEventListener("click", moveUpSelected);
+    if (dom.btnMoveDown) dom.btnMoveDown.addEventListener("click", moveDownSelected);
   }
 
-  // -------------------- Keyboard shortcuts (NO Backspace delete) --------------------
   function bindKeyboard() {
     window.addEventListener("keydown", (e) => {
-      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-      const mod = isMac ? e.metaKey : e.ctrlKey;
+      const mod = isMac() ? e.metaKey : e.ctrlKey;
 
-      // NEVER delete on Backspace.
-      // Only Delete / Del deletes.
+      // Delete ONLY on Delete key
       if (e.key === "Delete") {
         if (state.selectedId) {
           deleteSelected();
@@ -1473,42 +1440,85 @@
         }
       }
 
+      // Backspace NEVER deletes (we do nothing here)
+      if (e.key === "Backspace") {
+        // only prevent navigation if focused on body (optional)
+        if (document.activeElement === document.body) e.preventDefault();
+      }
+
       if (mod && (e.key === "d" || e.key === "D")) {
-        if (state.selectedId) {
-          duplicateSelected();
-          e.preventDefault();
-        }
+        if (state.selectedId) { duplicateSelected(); e.preventDefault(); }
       }
-
       if (mod && (e.key === "s" || e.key === "S")) {
-        saveToStorage();
-        e.preventDefault();
+        saveToStorage(); e.preventDefault();
       }
-
       if (mod && (e.key === "e" || e.key === "E")) {
-        exportLua();
-        e.preventDefault();
+        exportLua(); e.preventDefault();
       }
     });
   }
 
-  // -------------------- Buttons --------------------
-  function bindButtons() {
-    btnNew.addEventListener("click", newProject);
-    btnSave.addEventListener("click", saveToStorage);
-    btnLoad.addEventListener("click", loadFromStorage);
-    btnExport.addEventListener("click", exportLua);
-    btnCopy.addEventListener("click", copyExport);
-    btnDownload.addEventListener("click", downloadExport);
-    btnDuplicate.addEventListener("click", duplicateSelected);
-
-    btnMoveUp.addEventListener("click", moveUpSelected);
-    btnMoveDown.addEventListener("click", moveDownSelected);
-  }
-
-  // -------------------- Canvas binding --------------------
+  // -------------------- Canvas bind --------------------
   function bindCanvas() {
-    canvas.addEventListener("pointerdown", onPointerDown);
+    if (!dom.canvas) return;
+    dom.canvas.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListene
+
+    // avoid mobile scroll during drag
+    dom.canvas.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  }
+
+  // -------------------- Save/Load (uses state) --------------------
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setStatus("Saved.", "");
+  }
+  function loadFromStorage() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { setStatus("Nothing saved yet.", ""); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.nodes)) throw new Error("bad");
+      state.project = parsed.project || state.project;
+      state.nodes = parsed.nodes || [];
+      state.selectedId = parsed.selectedId || null;
+      state.zoom = parsed.zoom || 1;
+      state.showSafeArea = !!parsed.showSafeArea;
+      if (dom.chkSafeArea) dom.chkSafeArea.checked = state.showSafeArea;
+      setStatus("Loaded.", "");
+      render();
+    } catch {
+      setStatus("Load failed.", "");
+    }
+  }
+
+  // -------------------- Init --------------------
+  function init() {
+    // Defensive checks for required core DOM
+    if (!dom.canvas || !dom.canvasOuter) {
+      console.error("Canvas elements missing (#canvas, #canvasOuter). Check index.html.");
+      return;
+    }
+
+    // Toolbox
+    bindToolbox();
+
+    // Props + project controls
+    bindProps();
+    bindProjectControls();
+
+    // Buttons + keyboard + canvas + context menu
+    bindButtons();
+    bindKeyboard();
+    bindCanvas();
+    bindContextMenu();
+
+    // initial project
+    newProject();
+    setStatus("Ready. (v4)", `Canvas: ${CANVAS_W}×${CANVAS_H}px`);
+  }
+
+  init();
+})();
+
