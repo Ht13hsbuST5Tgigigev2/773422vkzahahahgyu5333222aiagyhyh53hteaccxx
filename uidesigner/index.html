@@ -12,7 +12,7 @@
       <div class="logo">▦</div>
       <div class="brand-text">
         <div class="name">RBLX UI Designer</div>
-        <div class="sub">Studio-like · Explorer · Drag into frames · Export Lua</div>
+        <div class="sub">Studio-like · Explorer parenting + ordering · Export Lua</div>
       </div>
     </div>
 
@@ -39,60 +39,132 @@
 
         <!-- Instances tab -->
         <div id="toolboxInstances" class="toolbox">
-          <button class="tool" data-create="Frame" title="Add Frame">
-            <span class="tool-ico">▭</span>
-            <span class="tool-text"><span class="tool-name">Frame</span><span class="tool-desc">Container</span></span>
-          </button>
-
-          <button class="tool" data-create="ScrollingFrame" title="Add ScrollingFrame">
-            <span class="tool-ico">↕</span>
-            <span class="tool-text"><span class="tool-name">ScrollingFrame</span><span class="tool-desc">Scrollable</span></span>
-          </button>
-
           <div class="toolgrid">
-            <button class="tool small" data-create="TextLabel" title="Add TextLabel"><span class="tool-ico">T</span><span class="tool-text"><span class="tool-name">TextLabel</span></span></button>
-            <button class="tool small" data-create="TextButton" title="Add TextButton"><span class="tool-ico">⦿</span><span class="tool-text"><span class="tool-name">TextButton</span></span></button>
-            <button class="tool small" data-create="TextBox" title="Add TextBox"><span class="tool-ico">⌨</span><span class="tool-text"><span class="tool-name">TextBox</span></span></button>
-            <button class="tool small" data-create="ImageLabel" title="Add ImageLabel"><span class="tool-ico">🖼</span><span class="tool-text"><span class="tool-name">ImageLabel</span></span></button>
-            <button class="tool small" data-create="ImageButton" title="Add ImageButton"><span class="tool-ico">🖼⦿</span><span class="tool-text"><span class="tool-name">ImageButton</span></span></button>
+            <button class="tool small" data-create="Frame" title="Add Frame">
+              <span class="tool-ico">▭</span><span class="tool-text"><span class="tool-name">Frame</span></span>
+            </button>
+            <button class="tool small" data-create="ScrollingFrame" title="Add ScrollingFrame">
+              <span class="tool-ico">↕</span><span class="tool-text"><span class="tool-name">ScrollingFrame</span></span>
+            </button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-create="UIListLayout" title="Add UIListLayout"><span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span></button>
-            <button class="tool small" data-create="UIGridLayout" title="Add UIGridLayout"><span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span></button>
-            <button class="tool small" data-create="UIPadding" title="Add UIPadding"><span class="tool-ico">▣</span><span class="tool-text"><span class="tool-name">UIPadding</span></span></button>
-            <button class="tool small" data-create="UIScale" title="Add UIScale"><span class="tool-ico">⤢</span><span class="tool-text"><span class="tool-name">UIScale</span></span></button>
+            <button class="tool small" data-create="TextLabel" title="Add TextLabel">
+              <span class="tool-ico">T</span><span class="tool-text"><span class="tool-name">TextLabel</span></span>
+            </button>
+            <button class="tool small" data-create="TextButton" title="Add TextButton">
+              <span class="tool-ico">⦿</span><span class="tool-text"><span class="tool-name">TextButton</span></span>
+            </button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-create="TextBox" title="Add TextBox">
+              <span class="tool-ico">⌨</span><span class="tool-text"><span class="tool-name">TextBox</span></span>
+            </button>
+            <button class="tool small" data-create="ViewportFrame" title="Add ViewportFrame">
+              <span class="tool-ico">⬚</span><span class="tool-text"><span class="tool-name">ViewportFrame</span></span>
+            </button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-create="ImageLabel" title="Add ImageLabel">
+              <span class="tool-ico">🖼</span><span class="tool-text"><span class="tool-name">ImageLabel</span></span>
+            </button>
+            <button class="tool small" data-create="ImageButton" title="Add ImageButton">
+              <span class="tool-ico">🖼⦿</span><span class="tool-text"><span class="tool-name">ImageButton</span></span>
+            </button>
           </div>
 
           <div class="small muted pad12">
-            Drag to move · corner handles to resize · drop onto a Frame/ScrollingFrame to parent.
-            <br/>Delete: <kbd>Del</kbd> or right-click → Delete (Backspace will NOT delete).
+            • Drag inside the canvas to move, corner handles to resize<br/>
+            • Drop onto Frame/ScrollingFrame to parent<br/>
+            • Ordering: use Explorer (drag to reorder) or the Up/Down buttons<br/>
+            • Delete only with <kbd>Del</kbd> (or right click → Delete). Backspace will never delete.
           </div>
         </div>
 
         <!-- UI Objects tab -->
         <div id="toolboxUiObjects" class="toolbox" hidden>
           <div class="small muted pad12">
-            UI Objects are added to the <b>selected</b> Instance (like Studio). Select an element first.
+            UI Objects attach to the <b>selected</b> instance (like Studio).
+          </div>
+
+          <!-- Match the Studio-style UI objects list (plus a few common extras) -->
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UIAspectRatioConstraint" title="Add UIAspectRatioConstraint">
+              <span class="tool-ico">⧉</span><span class="tool-text"><span class="tool-name">UIAspectRatioConstraint</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UICorner" title="Add UICorner">
+              <span class="tool-ico">◜</span><span class="tool-text"><span class="tool-name">UICorner</span></span>
+            </button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UICorner" title="Add UICorner"><span class="tool-ico">◜</span><span class="tool-text"><span class="tool-name">UICorner</span></span></button>
-            <button class="tool small" data-add-ui="UIStroke" title="Add UIStroke"><span class="tool-ico">▢</span><span class="tool-text"><span class="tool-name">UIStroke</span></span></button>
-            <button class="tool small" data-add-ui="UIGradient" title="Add UIGradient"><span class="tool-ico">▥</span><span class="tool-text"><span class="tool-name">UIGradient</span></span></button>
-            <button class="tool small" data-add-ui="UIAspectRatioConstraint" title="Add UIAspectRatioConstraint"><span class="tool-ico">⧉</span><span class="tool-text"><span class="tool-name">UIAspectRatioConstraint</span></span></button>
+            <button class="tool small" data-add-ui="UIGradient" title="Add UIGradient">
+              <span class="tool-ico">▥</span><span class="tool-text"><span class="tool-name">UIGradient</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIGridLayout" title="Add UIGridLayout">
+              <span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span>
+            </button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UISizeConstraint" title="Add UISizeConstraint"><span class="tool-ico">⇲</span><span class="tool-text"><span class="tool-name">UISizeConstraint</span></span></button>
-            <button class="tool small" data-add-ui="UITextSizeConstraint" title="Add UITextSizeConstraint"><span class="tool-ico">🔠</span><span class="tool-text"><span class="tool-name">UITextSizeConstraint</span></span></button>
-            <button class="tool small" data-add-ui="UIPageLayout" title="Add UIPageLayout"><span class="tool-ico">▤</span><span class="tool-text"><span class="tool-name">UIPageLayout</span></span></button>
-            <button class="tool small" data-add-ui="UITableLayout" title="Add UITableLayout"><span class="tool-ico">▦</span><span class="tool-text"><span class="tool-name">UITableLayout</span></span></button>
+            <button class="tool small" data-add-ui="UIListLayout" title="Add UIListLayout">
+              <span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIPadding" title="Add UIPadding">
+              <span class="tool-ico">▣</span><span class="tool-text"><span class="tool-name">UIPadding</span></span>
+            </button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIGridStyleLayout" title="(alias) UIGridLayout"><span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span></button>
-            <button class="tool small" data-add-ui="UIListStyleLayout" title="(alias) UIListLayout"><span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span></button>
+            <button class="tool small" data-add-ui="UIPageLayout" title="Add UIPageLayout">
+              <span class="tool-ico">▤</span><span class="tool-text"><span class="tool-name">UIPageLayout</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIScale" title="Add UIScale">
+              <span class="tool-ico">⤢</span><span class="tool-text"><span class="tool-name">UIScale</span></span>
+            </button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UISizeConstraint" title="Add UISizeConstraint">
+              <span class="tool-ico">⇲</span><span class="tool-text"><span class="tool-name">UISizeConstraint</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIStroke" title="Add UIStroke">
+              <span class="tool-ico">▢</span><span class="tool-text"><span class="tool-name">UIStroke</span></span>
+            </button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UITableLayout" title="Add UITableLayout">
+              <span class="tool-ico">▦</span><span class="tool-text"><span class="tool-name">UITableLayout</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UITextSizeConstraint" title="Add UITextSizeConstraint">
+              <span class="tool-ico">🔠</span><span class="tool-text"><span class="tool-name">UITextSizeConstraint</span></span>
+            </button>
+          </div>
+
+          <!-- Extra common Studio UI objects -->
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UIFlexLayout" title="Add UIFlexLayout">
+              <span class="tool-ico">⇄</span><span class="tool-text"><span class="tool-name">UIFlexLayout</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIGridStyleLayout" title="(alias) UIGridLayout">
+              <span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridStyleLayout</span></span>
+            </button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UIListStyleLayout" title="(alias) UIListLayout">
+              <span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListStyleLayout</span></span>
+            </button>
+            <button class="tool small" data-add-ui="UIConstraint" title="(placeholder) UIConstraint">
+              <span class="tool-ico">⛓</span><span class="tool-text"><span class="tool-name">UIConstraint</span></span>
+            </button>
+          </div>
+
+          <div class="small muted pad12">
+            Note: Not every UI object affects preview visuals in the browser yet, but they will export to Lua.
           </div>
         </div>
       </section>
@@ -101,14 +173,15 @@
         <div class="panel-title">
           Explorer
           <div class="panel-actions">
-            <button id="btnBringFront" class="iconbtn" title="Bring to front">⇧</button>
-            <button id="btnSendBack" class="iconbtn" title="Send to back">⇩</button>
+            <button id="btnMoveUp" class="iconbtn" title="Move up (higher ZIndex)">↑</button>
+            <button id="btnMoveDown" class="iconbtn" title="Move down (lower ZIndex)">↓</button>
             <button id="btnDuplicate" class="iconbtn" title="Duplicate selected">⎘</button>
           </div>
         </div>
 
         <div class="explorer-hint">
-          Tip: drag items in the Explorer to reorder (ZIndex). Drop onto a Frame to parent.
+          • Drag onto a Frame to parent<br/>
+          • Drag above/below another item to reorder (render order) inside the same parent
         </div>
 
         <div id="explorer" class="explorer" aria-label="Explorer tree"></div>
@@ -121,7 +194,7 @@
         <div class="canvas-toolbar">
           <div class="canvas-meta">
             <span class="pill">ScreenGui</span>
-            <span class="hint">Drop elements onto Frames to parent · Use Explorer for layering</span>
+            <span class="hint">Explorer controls parenting + ordering. Canvas drag drops into frames.</span>
           </div>
 
           <div class="canvas-controls">
@@ -189,9 +262,7 @@
       <section class="panel grow">
         <div class="panel-title">Properties</div>
 
-        <div id="emptyProps" class="empty">
-          Select an element to edit properties.
-        </div>
+        <div id="emptyProps" class="empty">Select an element to edit properties.</div>
 
         <div id="props" class="props" hidden>
           <div class="props-grid">
@@ -210,25 +281,13 @@
             </label>
 
             <div class="field split">
-              <div>
-                <span class="label">X</span>
-                <input id="propX" type="number" step="1" />
-              </div>
-              <div>
-                <span class="label">Y</span>
-                <input id="propY" type="number" step="1" />
-              </div>
+              <div><span class="label">X</span><input id="propX" type="number" step="1" /></div>
+              <div><span class="label">Y</span><input id="propY" type="number" step="1" /></div>
             </div>
 
             <div class="field split">
-              <div>
-                <span class="label">W</span>
-                <input id="propW" type="number" step="1" />
-              </div>
-              <div>
-                <span class="label">H</span>
-                <input id="propH" type="number" step="1" />
-              </div>
+              <div><span class="label">W</span><input id="propW" type="number" step="1" /></div>
+              <div><span class="label">H</span><input id="propH" type="number" step="1" /></div>
             </div>
 
             <label class="field row">
@@ -305,39 +364,24 @@
             </label>
 
             <div class="group-title">Image</div>
-
             <label class="field">
               <span class="label">Image</span>
               <input id="propImage" type="text" placeholder="rbxassetid://123 or https://..." />
             </label>
 
             <div class="group-title">ScrollingFrame</div>
-
             <div class="field split">
-              <div>
-                <span class="label">Canvas W</span>
-                <input id="propCanvasW" type="number" step="1" />
-              </div>
-              <div>
-                <span class="label">Canvas H</span>
-                <input id="propCanvasH" type="number" step="1" />
-              </div>
+              <div><span class="label">Canvas W</span><input id="propCanvasW" type="number" step="1" /></div>
+              <div><span class="label">Canvas H</span><input id="propCanvasH" type="number" step="1" /></div>
             </div>
-
             <label class="field row">
               <span class="label">ScrollBarThickness</span>
               <input id="propScrollBar" type="number" step="1" />
             </label>
 
             <div class="group-title">UI Objects</div>
-
-            <div id="uiObjectsList" class="uiobjects">
-              <!-- populated by JS -->
-            </div>
-
-            <div class="small muted">
-              Tip: add UI Objects from the Toolbox → UI Objects tab.
-            </div>
+            <div id="uiObjectsList" class="uiobjects"></div>
+            <div class="small muted">Add from Toolbox → UI Objects tab.</div>
           </div>
         </div>
       </section>
@@ -351,7 +395,7 @@
             <button id="btnDownload" class="btn" disabled>Download .lua</button>
           </div>
           <div class="small muted">
-            Supports parenting + ZIndex + ScrollingFrame + common UI objects.
+            Exports parenting + ordering (ZIndex) + UI Objects (basic props).
           </div>
         </div>
       </section>
@@ -368,8 +412,8 @@
   <!-- Right click context menu -->
   <div id="ctxMenu" class="ctxmenu" hidden>
     <button id="ctxDuplicate" type="button">Duplicate</button>
-    <button id="ctxBringFront" type="button">Bring to front</button>
-    <button id="ctxSendBack" type="button">Send to back</button>
+    <button id="ctxMoveUp" type="button">Move Up</button>
+    <button id="ctxMoveDown" type="button">Move Down</button>
     <div class="ctxsep"></div>
     <button id="ctxDelete" class="danger" type="button">Delete</button>
   </div>
