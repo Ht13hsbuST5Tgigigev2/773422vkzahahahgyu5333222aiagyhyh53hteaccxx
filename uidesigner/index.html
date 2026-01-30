@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RBLX UI Designer</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">▦</div>
+      <div class="brand-text">
+        <div class="name">RBLX UI Designer</div>
+        <div class="sub">Drag · Resize · Export to Lua</div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="btnNew" class="btn ghost" title="New project">New</button>
+      <button id="btnSave" class="btn ghost" title="Save to browser">Save</button>
+      <button id="btnLoad" class="btn ghost" title="Load from browser">Load</button>
+      <div class="divider"></div>
+      <button id="btnExport" class="btn primary" title="Generate Roblox Lua script">Export Lua</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT: Toolbox + Hierarchy -->
+    <aside class="left">
+      <section class="panel">
+        <div class="panel-title">Toolbox</div>
+        <div class="toolbox">
+          <button class="tool" data-create="Frame" title="Add Frame">
+            <span class="tool-ico">▭</span>
+            <span class="tool-text">
+              <span class="tool-name">Frame</span>
+              <span class="tool-desc">Container</span>
+            </span>
+          </button>
+
+          <button class="tool" data-create="TextLabel" title="Add TextLabel">
+            <span class="tool-ico">T</span>
+            <span class="tool-text">
+              <span class="tool-name">TextLabel</span>
+              <span class="tool-desc">Text</span>
+            </span>
+          </button>
+
+          <button class="tool" data-create="TextButton" title="Add TextButton">
+            <span class="tool-ico">⦿</span>
+            <span class="tool-text">
+              <span class="tool-name">TextButton</span>
+              <span class="tool-desc">Clickable</span>
+            </span>
+          </button>
+
+          <button class="tool" data-create="ImageLabel" title="Add ImageLabel">
+            <span class="tool-ico">🖼</span>
+            <span class="tool-text">
+              <span class="tool-name">ImageLabel</span>
+              <span class="tool-desc">Image</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel grow">
+        <div class="panel-title">
+          Hierarchy
+          <div class="panel-actions">
+            <button id="btnDuplicate" class="iconbtn" title="Duplicate selected">⎘</button>
+            <button id="btnDelete" class="iconbtn danger" title="Delete selected">🗑</button>
+          </div>
+        </div>
+        <div id="hierarchy" class="hierarchy" aria-label="Hierarchy tree"></div>
+      </section>
+    </aside>
+
+    <!-- CENTER: Canvas -->
+    <main class="center">
+      <div class="canvas-wrap">
+        <div class="canvas-toolbar">
+          <div class="canvas-meta">
+            <span class="pill">ScreenGui</span>
+            <span class="hint">Tip: drag to move, corner handles to resize. Hold <kbd>Shift</kbd> to snap.</span>
+          </div>
+          <div class="canvas-controls">
+            <label class="chk">
+              <input id="chkSafeArea" type="checkbox" />
+              <span>Safe area</span>
+            </label>
+
+            <label class="zoom">
+              <span>Zoom</span>
+              <input id="zoom" type="range" min="50" max="200" value="100" />
+              <span id="zoomLabel" class="mono">100%</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="canvas-outer" id="canvasOuter">
+          <div class="safe-area" id="safeArea" hidden></div>
+          <div id="canvas" class="canvas" aria-label="Design canvas"></div>
+        </div>
+
+        <div class="statusbar">
+          <div id="statusLeft" class="status-left">Ready.</div>
+          <div id="statusRight" class="status-right mono"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT: Properties + Export -->
+    <aside class="right">
+      <section class="panel">
+        <div class="panel-title">Project</div>
+        <div class="form">
+          <label class="field">
+            <span class="label">ScreenGui Name</span>
+            <input id="guiName" type="text" value="HelloWorldGui" />
+          </label>
+
+          <label class="field row">
+            <span class="label">ResetOnSpawn</span>
+            <select id="resetOnSpawn">
+              <option value="false" selected>false</option>
+              <option value="true">true</option>
+            </select>
+          </label>
+
+          <label class="field row">
+            <span class="label">Parent</span>
+            <select id="guiParent">
+              <option value="PlayerGui" selected>Players.LocalPlayer.PlayerGui</option>
+              <option value="CoreGui">CoreGui (testing)</option>
+            </select>
+          </label>
+
+          <label class="field row">
+            <span class="label">Output</span>
+            <select id="outputMode">
+              <option value="variables" selected>Use variables</option>
+              <option value="no-variables">No variables</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel grow">
+        <div class="panel-title">Properties</div>
+
+        <div id="emptyProps" class="empty">
+          Select an element to edit properties.
+        </div>
+
+        <div id="props" class="props" hidden>
+          <div class="props-grid">
+            <div class="group-title">Layout</div>
+
+            <label class="field">
+              <span class="label">Name</span>
+              <input id="propName" type="text" />
+            </label>
+
+            <div class="field split">
+              <div>
+                <span class="label">X</span>
+                <input id="propX" type="number" step="1" />
+              </div>
+              <div>
+                <span class="label">Y</span>
+                <input id="propY" type="number" step="1" />
+              </div>
+            </div>
+
+            <div class="field split">
+              <div>
+                <span class="label">W</span>
+                <input id="propW" type="number" step="1" />
+              </div>
+              <div>
+                <span class="label">H</span>
+                <input id="propH" type="number" step="1" />
+              </div>
+            </div>
+
+            <label class="field row">
+              <span class="label">Anchor</span>
+              <select id="propAnchor">
+                <option value="0,0">TopLeft (0,0)</option>
+                <option value="0.5,0">Top (0.5,0)</option>
+                <option value="1,0">TopRight (1,0)</option>
+                <option value="0,0.5">Left (0,0.5)</option>
+                <option value="0.5,0.5" selected>Center (0.5,0.5)</option>
+                <option value="1,0.5">Right (1,0.5)</option>
+                <option value="0,1">BottomLeft (0,1)</option>
+                <option value="0.5,1">Bottom (0.5,1)</option>
+                <option value="1,1">BottomRight (1,1)</option>
+              </select>
+            </label>
+
+            <div class="group-title">Appearance</div>
+
+            <label class="field row">
+              <span class="label">Background</span>
+              <input id="propBgColor" type="color" value="#1e1e1e" />
+            </label>
+
+            <label class="field row">
+              <span class="label">Background α</span>
+              <input id="propBgAlpha" type="range" min="0" max="1" step="0.01" value="1" />
+              <span id="propBgAlphaLabel" class="mono">1.00</span>
+            </label>
+
+            <label class="field row">
+              <span class="label">Border</span>
+              <select id="propBorder">
+                <option value="true" selected>On</option>
+                <option value="false">Off</option>
+              </select>
+            </label>
+
+            <div class="group-title">Text</div>
+
+            <label class="field">
+              <span class="label">Text</span>
+              <input id="propText" type="text" placeholder="(TextLabel/TextButton only)" />
+            </label>
+
+            <label class="field row">
+              <span class="label">Text Color</span>
+              <input id="propTextColor" type="color" value="#ffffff" />
+            </label>
+
+            <label class="field row">
+              <span class="label">TextScaled</span>
+              <select id="propTextScaled">
+                <option value="true" selected>true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+
+            <label class="field row">
+              <span class="label">Font</span>
+              <select id="propFont">
+                <option value="SourceSans">SourceSans</option>
+                <option value="SourceSansBold" selected>SourceSansBold</option>
+                <option value="Gotham">Gotham</option>
+                <option value="GothamBold">GothamBold</option>
+                <option value="Arial">Arial</option>
+                <option value="Code">Code</option>
+              </select>
+            </label>
+
+            <div class="group-title">Image</div>
+
+            <label class="field">
+              <span class="label">Image</span>
+              <input id="propImage" type="text" placeholder="rbxassetid://123456 (ImageLabel only)" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">Export</div>
+        <div class="export">
+          <textarea id="exportBox" class="mono" spellcheck="false" placeholder="Click “Export Lua” to generate code…" readonly></textarea>
+          <div class="export-actions">
+            <button id="btnCopy" class="btn" disabled>Copy</button>
+            <button id="btnDownload" class="btn" disabled>Download .lua</button>
+          </div>
+          <div class="small muted">
+            Output uses <span class="mono">UDim2.new(0, px, 0, px)</span> for size/position and includes anchor offsets.
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <span class="muted">Keyboard: <kbd>Del</kbd> delete · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> save · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>E</kbd> export</span>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
