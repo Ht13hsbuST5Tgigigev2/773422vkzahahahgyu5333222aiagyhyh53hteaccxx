@@ -12,21 +12,21 @@
       <div class="logo">▦</div>
       <div class="brand-text">
         <div class="name">RBLX UI Designer</div>
-        <div class="sub">Studio-like · Explorer parenting + ordering · Export Lua</div>
+        <div class="sub">Explorer parenting + ordering · Canvas drag/drop · Lua export</div>
       </div>
     </div>
 
     <div class="topbar-actions">
-      <button id="btnNew" class="btn ghost" title="New project">New</button>
-      <button id="btnSave" class="btn ghost" title="Save to browser">Save</button>
-      <button id="btnLoad" class="btn ghost" title="Load from browser">Load</button>
+      <button id="btnNew" class="btn ghost">New</button>
+      <button id="btnSave" class="btn ghost">Save</button>
+      <button id="btnLoad" class="btn ghost">Load</button>
       <div class="divider"></div>
-      <button id="btnExport" class="btn primary" title="Generate Roblox Lua script">Export Lua</button>
+      <button id="btnExport" class="btn primary">Export Lua</button>
     </div>
   </header>
 
   <div class="workspace">
-    <!-- LEFT: Toolbox + Explorer -->
+    <!-- LEFT -->
     <aside class="left">
       <section class="panel">
         <div class="panel-title">
@@ -37,134 +37,73 @@
           </div>
         </div>
 
-        <!-- Instances tab -->
+        <!-- Instances -->
         <div id="toolboxInstances" class="toolbox">
           <div class="toolgrid">
-            <button class="tool small" data-create="Frame" title="Add Frame">
-              <span class="tool-ico">▭</span><span class="tool-text"><span class="tool-name">Frame</span></span>
-            </button>
-            <button class="tool small" data-create="ScrollingFrame" title="Add ScrollingFrame">
-              <span class="tool-ico">↕</span><span class="tool-text"><span class="tool-name">ScrollingFrame</span></span>
-            </button>
+            <button class="tool small" data-create="Frame"><span class="tool-ico">▭</span><span class="tool-text"><span class="tool-name">Frame</span></span></button>
+            <button class="tool small" data-create="ScrollingFrame"><span class="tool-ico">↕</span><span class="tool-text"><span class="tool-name">ScrollingFrame</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-create="TextLabel" title="Add TextLabel">
-              <span class="tool-ico">T</span><span class="tool-text"><span class="tool-name">TextLabel</span></span>
-            </button>
-            <button class="tool small" data-create="TextButton" title="Add TextButton">
-              <span class="tool-ico">⦿</span><span class="tool-text"><span class="tool-name">TextButton</span></span>
-            </button>
+            <button class="tool small" data-create="TextLabel"><span class="tool-ico">T</span><span class="tool-text"><span class="tool-name">TextLabel</span></span></button>
+            <button class="tool small" data-create="TextButton"><span class="tool-ico">⦿</span><span class="tool-text"><span class="tool-name">TextButton</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-create="TextBox" title="Add TextBox">
-              <span class="tool-ico">⌨</span><span class="tool-text"><span class="tool-name">TextBox</span></span>
-            </button>
-            <button class="tool small" data-create="ViewportFrame" title="Add ViewportFrame">
-              <span class="tool-ico">⬚</span><span class="tool-text"><span class="tool-name">ViewportFrame</span></span>
-            </button>
+            <button class="tool small" data-create="TextBox"><span class="tool-ico">⌨</span><span class="tool-text"><span class="tool-name">TextBox</span></span></button>
+            <button class="tool small" data-create="ImageLabel"><span class="tool-ico">🖼</span><span class="tool-text"><span class="tool-name">ImageLabel</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-create="ImageLabel" title="Add ImageLabel">
-              <span class="tool-ico">🖼</span><span class="tool-text"><span class="tool-name">ImageLabel</span></span>
-            </button>
-            <button class="tool small" data-create="ImageButton" title="Add ImageButton">
-              <span class="tool-ico">🖼⦿</span><span class="tool-text"><span class="tool-name">ImageButton</span></span>
-            </button>
+            <button class="tool small" data-create="ImageButton"><span class="tool-ico">🖼⦿</span><span class="tool-text"><span class="tool-name">ImageButton</span></span></button>
+            <button class="tool small" data-create="ViewportFrame"><span class="tool-ico">⬚</span><span class="tool-text"><span class="tool-name">ViewportFrame</span></span></button>
           </div>
 
           <div class="small muted pad12">
-            • Drag inside the canvas to move, corner handles to resize<br/>
-            • Drop onto Frame/ScrollingFrame to parent<br/>
-            • Ordering: use Explorer (drag to reorder) or the Up/Down buttons<br/>
-            • Delete only with <kbd>Del</kbd> (or right click → Delete). Backspace will never delete.
+            Canvas: drag to move · handles to resize · drop onto Frames to parent<br />
+            Explorer: drag above/below to reorder (ZIndex) · drag into Frame row to parent<br />
+            Delete: <kbd>Del</kbd> only. Backspace never deletes.
           </div>
         </div>
 
-        <!-- UI Objects tab -->
+        <!-- UI Objects -->
         <div id="toolboxUiObjects" class="toolbox" hidden>
           <div class="small muted pad12">
-            UI Objects attach to the <b>selected</b> instance (like Studio).
-          </div>
-
-          <!-- Match the Studio-style UI objects list (plus a few common extras) -->
-          <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIAspectRatioConstraint" title="Add UIAspectRatioConstraint">
-              <span class="tool-ico">⧉</span><span class="tool-text"><span class="tool-name">UIAspectRatioConstraint</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UICorner" title="Add UICorner">
-              <span class="tool-ico">◜</span><span class="tool-text"><span class="tool-name">UICorner</span></span>
-            </button>
+            Adds UI objects to the <b>selected</b> instance.
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIGradient" title="Add UIGradient">
-              <span class="tool-ico">▥</span><span class="tool-text"><span class="tool-name">UIGradient</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIGridLayout" title="Add UIGridLayout">
-              <span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UIAspectRatioConstraint"><span class="tool-ico">⧉</span><span class="tool-text"><span class="tool-name">UIAspectRatioConstraint</span></span></button>
+            <button class="tool small" data-add-ui="UICorner"><span class="tool-ico">◜</span><span class="tool-text"><span class="tool-name">UICorner</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIListLayout" title="Add UIListLayout">
-              <span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIPadding" title="Add UIPadding">
-              <span class="tool-ico">▣</span><span class="tool-text"><span class="tool-name">UIPadding</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UIGradient"><span class="tool-ico">▥</span><span class="tool-text"><span class="tool-name">UIGradient</span></span></button>
+            <button class="tool small" data-add-ui="UIStroke"><span class="tool-ico">▢</span><span class="tool-text"><span class="tool-name">UIStroke</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIPageLayout" title="Add UIPageLayout">
-              <span class="tool-ico">▤</span><span class="tool-text"><span class="tool-name">UIPageLayout</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIScale" title="Add UIScale">
-              <span class="tool-ico">⤢</span><span class="tool-text"><span class="tool-name">UIScale</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UIPadding"><span class="tool-ico">▣</span><span class="tool-text"><span class="tool-name">UIPadding</span></span></button>
+            <button class="tool small" data-add-ui="UIScale"><span class="tool-ico">⤢</span><span class="tool-text"><span class="tool-name">UIScale</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UISizeConstraint" title="Add UISizeConstraint">
-              <span class="tool-ico">⇲</span><span class="tool-text"><span class="tool-name">UISizeConstraint</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIStroke" title="Add UIStroke">
-              <span class="tool-ico">▢</span><span class="tool-text"><span class="tool-name">UIStroke</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UISizeConstraint"><span class="tool-ico">⇲</span><span class="tool-text"><span class="tool-name">UISizeConstraint</span></span></button>
+            <button class="tool small" data-add-ui="UITextSizeConstraint"><span class="tool-ico">🔠</span><span class="tool-text"><span class="tool-name">UITextSizeConstraint</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UITableLayout" title="Add UITableLayout">
-              <span class="tool-ico">▦</span><span class="tool-text"><span class="tool-name">UITableLayout</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UITextSizeConstraint" title="Add UITextSizeConstraint">
-              <span class="tool-ico">🔠</span><span class="tool-text"><span class="tool-name">UITextSizeConstraint</span></span>
-            </button>
-          </div>
-
-          <!-- Extra common Studio UI objects -->
-          <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIFlexLayout" title="Add UIFlexLayout">
-              <span class="tool-ico">⇄</span><span class="tool-text"><span class="tool-name">UIFlexLayout</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIGridStyleLayout" title="(alias) UIGridLayout">
-              <span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridStyleLayout</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UIListLayout"><span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span></button>
+            <button class="tool small" data-add-ui="UIGridLayout"><span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span></button>
           </div>
 
           <div class="toolgrid">
-            <button class="tool small" data-add-ui="UIListStyleLayout" title="(alias) UIListLayout">
-              <span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListStyleLayout</span></span>
-            </button>
-            <button class="tool small" data-add-ui="UIConstraint" title="(placeholder) UIConstraint">
-              <span class="tool-ico">⛓</span><span class="tool-text"><span class="tool-name">UIConstraint</span></span>
-            </button>
+            <button class="tool small" data-add-ui="UITableLayout"><span class="tool-ico">▦</span><span class="tool-text"><span class="tool-name">UITableLayout</span></span></button>
+            <button class="tool small" data-add-ui="UIPageLayout"><span class="tool-ico">▤</span><span class="tool-text"><span class="tool-name">UIPageLayout</span></span></button>
           </div>
 
           <div class="small muted pad12">
-            Note: Not every UI object affects preview visuals in the browser yet, but they will export to Lua.
+            Preview won’t simulate every layout perfectly in HTML, but export includes them.
           </div>
         </div>
       </section>
@@ -173,28 +112,25 @@
         <div class="panel-title">
           Explorer
           <div class="panel-actions">
-            <button id="btnMoveUp" class="iconbtn" title="Move up (higher ZIndex)">↑</button>
-            <button id="btnMoveDown" class="iconbtn" title="Move down (lower ZIndex)">↓</button>
-            <button id="btnDuplicate" class="iconbtn" title="Duplicate selected">⎘</button>
+            <button id="btnMoveUp" class="iconbtn" title="Move up">↑</button>
+            <button id="btnMoveDown" class="iconbtn" title="Move down">↓</button>
+            <button id="btnDuplicate" class="iconbtn" title="Duplicate">⎘</button>
           </div>
         </div>
-
         <div class="explorer-hint">
-          • Drag onto a Frame to parent<br/>
-          • Drag above/below another item to reorder (render order) inside the same parent
+          Drag into a Frame to parent · Drag above/below to reorder inside same parent
         </div>
-
-        <div id="explorer" class="explorer" aria-label="Explorer tree"></div>
+        <div id="explorer" class="explorer"></div>
       </section>
     </aside>
 
-    <!-- CENTER: Canvas -->
+    <!-- CENTER -->
     <main class="center">
       <div class="canvas-wrap">
         <div class="canvas-toolbar">
           <div class="canvas-meta">
             <span class="pill">ScreenGui</span>
-            <span class="hint">Explorer controls parenting + ordering. Canvas drag drops into frames.</span>
+            <span class="hint">Canvas + Explorer are synced</span>
           </div>
 
           <div class="canvas-controls">
@@ -213,7 +149,7 @@
 
         <div class="canvas-outer" id="canvasOuter">
           <div class="safe-area" id="safeArea" hidden></div>
-          <div id="canvas" class="canvas" aria-label="Design canvas"></div>
+          <div id="canvas" class="canvas"></div>
         </div>
 
         <div class="statusbar">
@@ -223,7 +159,7 @@
       </div>
     </main>
 
-    <!-- RIGHT: Properties + Export -->
+    <!-- RIGHT -->
     <aside class="right">
       <section class="panel">
         <div class="panel-title">Project</div>
@@ -275,9 +211,7 @@
 
             <label class="field row">
               <span class="label">Parent</span>
-              <select id="propParent">
-                <option value="ROOT">ScreenGui (root)</option>
-              </select>
+              <select id="propParent"></select>
             </label>
 
             <div class="field split">
@@ -293,15 +227,15 @@
             <label class="field row">
               <span class="label">Anchor</span>
               <select id="propAnchor">
-                <option value="0,0">TopLeft (0,0)</option>
-                <option value="0.5,0">Top (0.5,0)</option>
-                <option value="1,0">TopRight (1,0)</option>
-                <option value="0,0.5">Left (0,0.5)</option>
-                <option value="0.5,0.5" selected>Center (0.5,0.5)</option>
-                <option value="1,0.5">Right (1,0.5)</option>
-                <option value="0,1">BottomLeft (0,1)</option>
-                <option value="0.5,1">Bottom (0.5,1)</option>
-                <option value="1,1">BottomRight (1,1)</option>
+                <option value="0,0">TopLeft</option>
+                <option value="0.5,0">Top</option>
+                <option value="1,0">TopRight</option>
+                <option value="0,0.5">Left</option>
+                <option value="0.5,0.5" selected>Center</option>
+                <option value="1,0.5">Right</option>
+                <option value="0,1">BottomLeft</option>
+                <option value="0.5,1">Bottom</option>
+                <option value="1,1">BottomRight</option>
               </select>
             </label>
 
@@ -326,8 +260,8 @@
             <label class="field row">
               <span class="label">Border</span>
               <select id="propBorder">
-                <option value="true" selected>On</option>
-                <option value="false">Off</option>
+                <option value="true">On</option>
+                <option value="false" selected>Off</option>
               </select>
             </label>
 
@@ -335,7 +269,7 @@
 
             <label class="field">
               <span class="label">Text</span>
-              <input id="propText" type="text" placeholder="TextLabel/TextButton/TextBox only" />
+              <input id="propText" type="text" />
             </label>
 
             <label class="field row">
@@ -381,7 +315,6 @@
 
             <div class="group-title">UI Objects</div>
             <div id="uiObjectsList" class="uiobjects"></div>
-            <div class="small muted">Add from Toolbox → UI Objects tab.</div>
           </div>
         </div>
       </section>
@@ -389,13 +322,10 @@
       <section class="panel">
         <div class="panel-title">Export</div>
         <div class="export">
-          <textarea id="exportBox" class="mono" spellcheck="false" placeholder="Click “Export Lua” to generate code…" readonly></textarea>
+          <textarea id="exportBox" class="mono" spellcheck="false" readonly></textarea>
           <div class="export-actions">
             <button id="btnCopy" class="btn" disabled>Copy</button>
             <button id="btnDownload" class="btn" disabled>Download .lua</button>
-          </div>
-          <div class="small muted">
-            Exports parenting + ordering (ZIndex) + UI Objects (basic props).
           </div>
         </div>
       </section>
@@ -409,7 +339,7 @@
     </span>
   </footer>
 
-  <!-- Right click context menu -->
+  <!-- Context menu -->
   <div id="ctxMenu" class="ctxmenu" hidden>
     <button id="ctxDuplicate" type="button">Duplicate</button>
     <button id="ctxMoveUp" type="button">Move Up</button>
