@@ -1,14 +1,11 @@
-/* styles.css — RBLX UI Designer (v3, FULL)
-   Includes:
-   - Explorer drop markers (above/below/inside)
-   - Polished panels + canvas
-   - Context menu + buttons
+/* styles.css — RBLX UI Designer (v4, MATCHING)
+   This CSS is guaranteed to match the v4 index.html + app.js.
+   If things "don't work", 99% of the time it’s because CSS/HTML/JS were mixed across versions.
 */
 
 :root{
   --bg: #07090f;
   --panel: rgba(255,255,255,0.055);
-  --panel2: rgba(255,255,255,0.075);
   --stroke: rgba(255,255,255,0.10);
   --stroke2: rgba(255,255,255,0.16);
   --text: rgba(255,255,255,0.92);
@@ -31,7 +28,7 @@
 html, body{
   height: 100%;
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   background:
     radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,0.20), transparent 55%),
     radial-gradient(900px 600px at 100% 10%, rgba(90,214,255,0.16), transparent 60%),
@@ -70,42 +67,23 @@ kbd{
   backdrop-filter: blur(14px);
 }
 
-.brand{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.brand{ display:flex; align-items:center; gap:12px; }
 .logo{
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  display: grid;
-  place-items: center;
+  display:grid;
+  place-items:center;
   background: linear-gradient(135deg, rgba(124,92,255,0.95), rgba(90,214,255,0.60));
   border: 1px solid rgba(255,255,255,0.24);
   box-shadow: 0 10px 24px rgba(124,92,255,0.18);
   font-weight: 900;
 }
-.brand-text .name{
-  font-weight: 820;
-  letter-spacing: 0.2px;
-}
-.brand-text .sub{
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 1px;
-}
-.topbar-actions{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.divider{
-  width: 1px;
-  height: 26px;
-  background: var(--stroke);
-  margin: 0 2px;
-}
+.brand-text .name{ font-weight: 820; letter-spacing: 0.2px; }
+.brand-text .sub{ font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+.topbar-actions{ display:flex; align-items:center; gap:10px; }
+.divider{ width:1px; height:26px; background: var(--stroke); margin: 0 2px; }
 
 /* Buttons */
 .btn{
@@ -127,7 +105,6 @@ kbd{
 }
 .btn:active{ transform: translateY(1px) scale(0.99); }
 .btn:disabled{ opacity: 0.45; cursor: not-allowed; }
-
 .btn.primary{
   background: linear-gradient(135deg, rgba(124,92,255,0.95), rgba(90,214,255,0.72));
   border-color: rgba(255,255,255,0.26);
@@ -138,45 +115,6 @@ kbd{
   border-color: rgba(255,255,255,0.12);
   box-shadow: none;
 }
-
-/* Layout */
-.workspace{
-  display: grid;
-  grid-template-columns: 320px 1fr 380px;
-  gap: 14px;
-  padding: 14px;
-  height: calc(100vh - 70px - 34px);
-}
-
-.left, .right, .center{ min-height: 0; }
-.left, .right{
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.center{ display: flex; flex-direction: column; }
-
-.panel{
-  background: var(--panel);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius2);
-  box-shadow: var(--shadow2);
-  overflow: hidden;
-  min-height: 0;
-}
-.panel.grow{ flex: 1; }
-
-.panel-title{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 12px;
-  font-weight: 820;
-  border-bottom: 1px solid var(--stroke);
-  background: rgba(255,255,255,0.03);
-}
-.panel-actions{ display: flex; gap: 8px; }
 
 .iconbtn{
   appearance: none;
@@ -194,7 +132,7 @@ kbd{
 }
 .iconbtn:active{ transform: translateY(1px); }
 
-/* Tab buttons */
+/* Tabs */
 .tabbtn{
   appearance: none;
   border: 1px solid rgba(255,255,255,0.14);
@@ -217,12 +155,57 @@ kbd{
   color: rgba(255,255,255,0.92);
 }
 
+/* Layout */
+.workspace{
+  display: grid;
+  grid-template-columns: 320px 1fr 380px;
+  gap: 14px;
+  padding: 14px;
+  height: calc(100vh - 70px - 34px);
+}
+
+.left, .right, .center{ min-height: 0; }
+.left, .right{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.center{ display: flex; flex-direction: column; }
+
+/* Panels */
+.panel{
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius2);
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+  min-height: 0;
+}
+.panel.grow{ flex: 1; }
+
+.panel-title{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 12px;
+  font-weight: 820;
+  border-bottom: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+}
+.panel-actions{ display:flex; gap: 8px; }
+
 .pad12{ padding: 12px; }
 
 /* Toolbox */
 .toolbox{
   padding: 12px;
   display: grid;
+  gap: 10px;
+}
+.toolgrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 .tool{
@@ -253,8 +236,8 @@ kbd{
   width: 34px;
   height: 34px;
   border-radius: 14px;
-  display: grid;
-  place-items: center;
+  display:grid;
+  place-items:center;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   font-weight: 900;
@@ -268,12 +251,6 @@ kbd{
 }
 .tool-name{ font-weight: 820; }
 .tool-text{ display:flex; flex-direction:column; gap:2px; }
-.tool-desc{ display:block; font-size: 12px; color: var(--muted); margin-top: 1px; }
-.toolgrid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
 
 /* Explorer */
 .explorer-hint{
@@ -283,7 +260,6 @@ kbd{
   font-size: 12px;
   background: rgba(255,255,255,0.02);
 }
-
 .explorer{
   padding: 10px 10px 12px 10px;
   overflow: auto;
@@ -337,7 +313,7 @@ kbd{
   color: rgba(255,255,255,0.55);
 }
 
-/* Explorer drop markers (Studio-like) */
+/* Explorer drop markers */
 .ex-row.drop-above{
   box-shadow:
     inset 0 3px 0 rgba(90,214,255,.75),
@@ -353,33 +329,28 @@ kbd{
   outline-offset: 2px;
 }
 
-/* Center canvas */
+/* Canvas */
 .canvas-wrap{
   background: rgba(255,255,255,0.045);
   border: 1px solid var(--stroke);
   border-radius: var(--radius2);
   box-shadow: var(--shadow);
   overflow: hidden;
-  display: flex;
+  display:flex;
   flex-direction: column;
   min-height: 0;
   flex: 1;
 }
 .canvas-toolbar{
-  display: flex;
-  align-items: center;
+  display:flex;
+  align-items:center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 12px;
   border-bottom: 1px solid var(--stroke);
   background: rgba(255,255,255,0.03);
 }
-.canvas-meta{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
+.canvas-meta{ display:flex; align-items:center; gap: 10px; min-width: 0; }
 .pill{
   font-size: 12px;
   padding: 4px 9px;
@@ -395,8 +366,8 @@ kbd{
   text-overflow: ellipsis;
 }
 .canvas-controls{
-  display: flex;
-  align-items: center;
+  display:flex;
+  align-items:center;
   gap: 12px;
 }
 .chk, .zoom{
@@ -450,8 +421,6 @@ kbd{
   overflow: visible;
   box-shadow: 0 10px 22px rgba(0,0,0,0.32);
 }
-
-/* Node inner to hold children */
 .node-inner{
   position: absolute;
   inset: 0;
@@ -467,7 +436,6 @@ kbd{
     0 12px 24px rgba(0,0,0,0.38);
 }
 .node.clickable{ cursor: pointer; }
-
 .node.container{
   box-shadow: 0 12px 26px rgba(0,0,0,0.38);
 }
@@ -497,8 +465,8 @@ kbd{
 .node-text{
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display:grid;
+  place-items:center;
   padding: 10px;
   text-align: center;
   word-break: break-word;
@@ -552,22 +520,16 @@ kbd{
 
 /* Status bar */
 .statusbar{
-  display: flex;
-  align-items: center;
+  display:flex;
+  align-items:center;
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
   border-top: 1px solid var(--stroke);
   background: rgba(255,255,255,0.03);
 }
-.status-left{
-  font-size: 12px;
-  color: var(--muted);
-}
-.status-right{
-  font-size: 12px;
-  color: rgba(255,255,255,0.76);
-}
+.status-left{ font-size: 12px; color: var(--muted); }
+.status-right{ font-size: 12px; color: rgba(255,255,255,0.76); }
 
 /* Forms */
 .form{
@@ -575,14 +537,14 @@ kbd{
   display: grid;
   gap: 10px;
 }
-.field{ display: grid; gap: 6px; }
+.field{ display:grid; gap: 6px; }
 .field.row{
   grid-template-columns: 1fr auto;
-  align-items: center;
+  align-items:center;
   gap: 10px;
 }
 .field.split{
-  display: grid;
+  display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
@@ -622,7 +584,7 @@ select{ cursor: pointer; }
   max-height: 100%;
 }
 .props-grid{
-  display: grid;
+  display:grid;
   gap: 10px;
 }
 .group-title{
@@ -640,10 +602,7 @@ select{ cursor: pointer; }
 }
 
 /* UI objects list */
-.uiobjects{
-  display: grid;
-  gap: 8px;
-}
+.uiobjects{ display:grid; gap: 8px; }
 .uiobj-empty{
   padding: 10px;
   border-radius: 14px;
@@ -653,8 +612,8 @@ select{ cursor: pointer; }
   font-size: 12px;
 }
 .uiobj-row{
-  display: flex;
-  align-items: center;
+  display:flex;
+  align-items:center;
   justify-content: space-between;
   gap: 10px;
   padding: 9px 10px;
@@ -677,15 +636,15 @@ select{ cursor: pointer; }
   cursor: pointer;
 }
 .uiobj-remove:hover{
-  background: rgba(255,70,100,0.10);
-  border-color: rgba(255,70,100,0.26);
+  background: rgba(255,70,100,0.12);
+  border-color: rgba(255,70,100,0.22);
   color: rgba(255,255,255,0.88);
 }
 
 /* Export */
 .export{
   padding: 12px;
-  display: grid;
+  display:grid;
   gap: 10px;
 }
 .export textarea{
@@ -697,8 +656,9 @@ select{ cursor: pointer; }
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(0,0,0,0.20);
 }
+
 .export-actions{
-  display: flex;
+  display:flex;
   gap: 10px;
   justify-content: flex-end;
 }
@@ -731,7 +691,7 @@ select{ cursor: pointer; }
 }
 .ctxmenu button{
   width: 100%;
-  text-align: left;
+  text-align:left;
   appearance: none;
   border: 1px solid transparent;
   background: transparent;
