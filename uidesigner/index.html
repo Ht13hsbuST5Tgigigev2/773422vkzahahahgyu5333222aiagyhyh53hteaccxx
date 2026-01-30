@@ -12,7 +12,7 @@
       <div class="logo">▦</div>
       <div class="brand-text">
         <div class="name">RBLX UI Designer</div>
-        <div class="sub">Drag · Resize · Export to Lua</div>
+        <div class="sub">Studio-like · Explorer · Drag into frames · Export Lua</div>
       </div>
     </div>
 
@@ -26,54 +26,92 @@
   </header>
 
   <div class="workspace">
-    <!-- LEFT: Toolbox + Hierarchy -->
+    <!-- LEFT: Toolbox + Explorer -->
     <aside class="left">
       <section class="panel">
-        <div class="panel-title">Toolbox</div>
-        <div class="toolbox">
+        <div class="panel-title">
+          <span>Toolbox</span>
+          <div class="panel-actions">
+            <button id="tabInstances" class="tabbtn active" type="button">Instances</button>
+            <button id="tabUiObjects" class="tabbtn" type="button">UI Objects</button>
+          </div>
+        </div>
+
+        <!-- Instances tab -->
+        <div id="toolboxInstances" class="toolbox">
           <button class="tool" data-create="Frame" title="Add Frame">
             <span class="tool-ico">▭</span>
-            <span class="tool-text">
-              <span class="tool-name">Frame</span>
-              <span class="tool-desc">Container</span>
-            </span>
+            <span class="tool-text"><span class="tool-name">Frame</span><span class="tool-desc">Container</span></span>
           </button>
 
-          <button class="tool" data-create="TextLabel" title="Add TextLabel">
-            <span class="tool-ico">T</span>
-            <span class="tool-text">
-              <span class="tool-name">TextLabel</span>
-              <span class="tool-desc">Text</span>
-            </span>
+          <button class="tool" data-create="ScrollingFrame" title="Add ScrollingFrame">
+            <span class="tool-ico">↕</span>
+            <span class="tool-text"><span class="tool-name">ScrollingFrame</span><span class="tool-desc">Scrollable</span></span>
           </button>
 
-          <button class="tool" data-create="TextButton" title="Add TextButton">
-            <span class="tool-ico">⦿</span>
-            <span class="tool-text">
-              <span class="tool-name">TextButton</span>
-              <span class="tool-desc">Clickable</span>
-            </span>
-          </button>
+          <div class="toolgrid">
+            <button class="tool small" data-create="TextLabel" title="Add TextLabel"><span class="tool-ico">T</span><span class="tool-text"><span class="tool-name">TextLabel</span></span></button>
+            <button class="tool small" data-create="TextButton" title="Add TextButton"><span class="tool-ico">⦿</span><span class="tool-text"><span class="tool-name">TextButton</span></span></button>
+            <button class="tool small" data-create="TextBox" title="Add TextBox"><span class="tool-ico">⌨</span><span class="tool-text"><span class="tool-name">TextBox</span></span></button>
+            <button class="tool small" data-create="ImageLabel" title="Add ImageLabel"><span class="tool-ico">🖼</span><span class="tool-text"><span class="tool-name">ImageLabel</span></span></button>
+            <button class="tool small" data-create="ImageButton" title="Add ImageButton"><span class="tool-ico">🖼⦿</span><span class="tool-text"><span class="tool-name">ImageButton</span></span></button>
+          </div>
 
-          <button class="tool" data-create="ImageLabel" title="Add ImageLabel">
-            <span class="tool-ico">🖼</span>
-            <span class="tool-text">
-              <span class="tool-name">ImageLabel</span>
-              <span class="tool-desc">Image</span>
-            </span>
-          </button>
+          <div class="toolgrid">
+            <button class="tool small" data-create="UIListLayout" title="Add UIListLayout"><span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span></button>
+            <button class="tool small" data-create="UIGridLayout" title="Add UIGridLayout"><span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span></button>
+            <button class="tool small" data-create="UIPadding" title="Add UIPadding"><span class="tool-ico">▣</span><span class="tool-text"><span class="tool-name">UIPadding</span></span></button>
+            <button class="tool small" data-create="UIScale" title="Add UIScale"><span class="tool-ico">⤢</span><span class="tool-text"><span class="tool-name">UIScale</span></span></button>
+          </div>
+
+          <div class="small muted pad12">
+            Drag to move · corner handles to resize · drop onto a Frame/ScrollingFrame to parent.
+            <br/>Delete: <kbd>Del</kbd> or right-click → Delete (Backspace will NOT delete).
+          </div>
+        </div>
+
+        <!-- UI Objects tab -->
+        <div id="toolboxUiObjects" class="toolbox" hidden>
+          <div class="small muted pad12">
+            UI Objects are added to the <b>selected</b> Instance (like Studio). Select an element first.
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UICorner" title="Add UICorner"><span class="tool-ico">◜</span><span class="tool-text"><span class="tool-name">UICorner</span></span></button>
+            <button class="tool small" data-add-ui="UIStroke" title="Add UIStroke"><span class="tool-ico">▢</span><span class="tool-text"><span class="tool-name">UIStroke</span></span></button>
+            <button class="tool small" data-add-ui="UIGradient" title="Add UIGradient"><span class="tool-ico">▥</span><span class="tool-text"><span class="tool-name">UIGradient</span></span></button>
+            <button class="tool small" data-add-ui="UIAspectRatioConstraint" title="Add UIAspectRatioConstraint"><span class="tool-ico">⧉</span><span class="tool-text"><span class="tool-name">UIAspectRatioConstraint</span></span></button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UISizeConstraint" title="Add UISizeConstraint"><span class="tool-ico">⇲</span><span class="tool-text"><span class="tool-name">UISizeConstraint</span></span></button>
+            <button class="tool small" data-add-ui="UITextSizeConstraint" title="Add UITextSizeConstraint"><span class="tool-ico">🔠</span><span class="tool-text"><span class="tool-name">UITextSizeConstraint</span></span></button>
+            <button class="tool small" data-add-ui="UIPageLayout" title="Add UIPageLayout"><span class="tool-ico">▤</span><span class="tool-text"><span class="tool-name">UIPageLayout</span></span></button>
+            <button class="tool small" data-add-ui="UITableLayout" title="Add UITableLayout"><span class="tool-ico">▦</span><span class="tool-text"><span class="tool-name">UITableLayout</span></span></button>
+          </div>
+
+          <div class="toolgrid">
+            <button class="tool small" data-add-ui="UIGridStyleLayout" title="(alias) UIGridLayout"><span class="tool-ico">☷</span><span class="tool-text"><span class="tool-name">UIGridLayout</span></span></button>
+            <button class="tool small" data-add-ui="UIListStyleLayout" title="(alias) UIListLayout"><span class="tool-ico">≡</span><span class="tool-text"><span class="tool-name">UIListLayout</span></span></button>
+          </div>
         </div>
       </section>
 
       <section class="panel grow">
         <div class="panel-title">
-          Hierarchy
+          Explorer
           <div class="panel-actions">
+            <button id="btnBringFront" class="iconbtn" title="Bring to front">⇧</button>
+            <button id="btnSendBack" class="iconbtn" title="Send to back">⇩</button>
             <button id="btnDuplicate" class="iconbtn" title="Duplicate selected">⎘</button>
-            <button id="btnDelete" class="iconbtn danger" title="Delete selected">🗑</button>
           </div>
         </div>
-        <div id="hierarchy" class="hierarchy" aria-label="Hierarchy tree"></div>
+
+        <div class="explorer-hint">
+          Tip: drag items in the Explorer to reorder (ZIndex). Drop onto a Frame to parent.
+        </div>
+
+        <div id="explorer" class="explorer" aria-label="Explorer tree"></div>
       </section>
     </aside>
 
@@ -83,8 +121,9 @@
         <div class="canvas-toolbar">
           <div class="canvas-meta">
             <span class="pill">ScreenGui</span>
-            <span class="hint">Tip: drag to move, corner handles to resize. Hold <kbd>Shift</kbd> to snap.</span>
+            <span class="hint">Drop elements onto Frames to parent · Use Explorer for layering</span>
           </div>
+
           <div class="canvas-controls">
             <label class="chk">
               <input id="chkSafeArea" type="checkbox" />
@@ -156,11 +195,18 @@
 
         <div id="props" class="props" hidden>
           <div class="props-grid">
-            <div class="group-title">Layout</div>
+            <div class="group-title">Core</div>
 
             <label class="field">
               <span class="label">Name</span>
               <input id="propName" type="text" />
+            </label>
+
+            <label class="field row">
+              <span class="label">Parent</span>
+              <select id="propParent">
+                <option value="ROOT">ScreenGui (root)</option>
+              </select>
             </label>
 
             <div class="field split">
@@ -200,6 +246,11 @@
               </select>
             </label>
 
+            <label class="field row">
+              <span class="label">ZIndex</span>
+              <input id="propZIndex" type="number" step="1" />
+            </label>
+
             <div class="group-title">Appearance</div>
 
             <label class="field row">
@@ -225,7 +276,7 @@
 
             <label class="field">
               <span class="label">Text</span>
-              <input id="propText" type="text" placeholder="(TextLabel/TextButton only)" />
+              <input id="propText" type="text" placeholder="TextLabel/TextButton/TextBox only" />
             </label>
 
             <label class="field row">
@@ -257,8 +308,36 @@
 
             <label class="field">
               <span class="label">Image</span>
-              <input id="propImage" type="text" placeholder="rbxassetid://123456 (ImageLabel only)" />
+              <input id="propImage" type="text" placeholder="rbxassetid://123 or https://..." />
             </label>
+
+            <div class="group-title">ScrollingFrame</div>
+
+            <div class="field split">
+              <div>
+                <span class="label">Canvas W</span>
+                <input id="propCanvasW" type="number" step="1" />
+              </div>
+              <div>
+                <span class="label">Canvas H</span>
+                <input id="propCanvasH" type="number" step="1" />
+              </div>
+            </div>
+
+            <label class="field row">
+              <span class="label">ScrollBarThickness</span>
+              <input id="propScrollBar" type="number" step="1" />
+            </label>
+
+            <div class="group-title">UI Objects</div>
+
+            <div id="uiObjectsList" class="uiobjects">
+              <!-- populated by JS -->
+            </div>
+
+            <div class="small muted">
+              Tip: add UI Objects from the Toolbox → UI Objects tab.
+            </div>
           </div>
         </div>
       </section>
@@ -272,7 +351,7 @@
             <button id="btnDownload" class="btn" disabled>Download .lua</button>
           </div>
           <div class="small muted">
-            Output uses <span class="mono">UDim2.new(0, px, 0, px)</span> for size/position and includes anchor offsets.
+            Supports parenting + ZIndex + ScrollingFrame + common UI objects.
           </div>
         </div>
       </section>
@@ -280,8 +359,20 @@
   </div>
 
   <footer class="footer">
-    <span class="muted">Keyboard: <kbd>Del</kbd> delete · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> save · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>E</kbd> export</span>
+    <span class="muted">
+      Shortcuts: <kbd>Del</kbd> delete · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>D</kbd> duplicate ·
+      <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> save · <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>E</kbd> export
+    </span>
   </footer>
+
+  <!-- Right click context menu -->
+  <div id="ctxMenu" class="ctxmenu" hidden>
+    <button id="ctxDuplicate" type="button">Duplicate</button>
+    <button id="ctxBringFront" type="button">Bring to front</button>
+    <button id="ctxSendBack" type="button">Send to back</button>
+    <div class="ctxsep"></div>
+    <button id="ctxDelete" class="danger" type="button">Delete</button>
+  </div>
 
   <script src="./app.js" defer></script>
 </body>
